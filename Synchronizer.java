@@ -3,6 +3,8 @@ package SYSC3303Project;
 import java.util.ArrayList;
 
 public class Synchronizer {
+
+    //Create separate locks/critical sections for various synchronous methods
     private ArrayList<FloorData> elevatorCommands = new ArrayList<>();
     private final int MAX_QUEUE_LENGTH = 4;
 
@@ -14,9 +16,13 @@ public class Synchronizer {
 
     private int currentFloor;
 
+    private String time;
+
     private boolean hasArrived = false;
 
-    private boolean requestElevator = false;
+    private boolean notifiedFloorSensor = false;
+
+    private boolean handlingRequest = false;
     public synchronized void sendInputLine(FloorData floorData) {
         while (elevatorCommands.size()  >= MAX_QUEUE_LENGTH) {
             try {
@@ -28,7 +34,8 @@ public class Synchronizer {
         elevatorCommands.add(floorData);
         notifyAll();
     }
-    public synchronized FloorData retrieveCommand() {
+
+    public synchronized FloorData retrieveCommandRequestElevator () {
         while (elevatorCommands.isEmpty()) {
             try {
                 wait();
@@ -37,27 +44,51 @@ public class Synchronizer {
             }
         }
         FloorData command = elevatorCommands.remove(0);
+        this.direction = command.getDirection(); // flags set for the request direction
+        this.destinationFloor = command.getDestinationFloor(); // flags set for the request destination floor
+        this.pickupFloor = command.getArrivalFloor(); // flags set for the request pickup floor
+        this.time = command.getTime();
         notifyAll();
         return command;
+    }
+    public synchronized FloorData processElevatorRequest() {
+        while (handlingRequest) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            handlingRequest = true; // elevator is now processing request
+
+        }
+        notifyAll();
+        return new FloorData(time, pickupFloor, direction, destinationFloor);
+
 
     }
-
-    public synchronized void requestElevator(DirectionEnum direction, int destinationFloor, int pickupFloor) {
-        // if the elevator is processing a request, wait
-        while (requestElevator) {
+    public synchronized void notifyFloor(int currentFloor) {
+        // Elevator arrives at a floor sensor and updates the current floor flag
+        while (!notifiedFloorSensor) { // while elevator is moving and has not reached a floor sensor
             try {
                 wait();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
-        requestElevator = true; // elevator is now processing request
-        this.direction = direction; // flags set for the request direction
-        this.destinationFloor = destinationFloor; // flags set for the request destination floor
-        this.pickupFloor = pickupFloor; // flags set for the request pickup floor
+        this.currentFloor = currentFloor;
         notifyAll();
     }
-    public synchronized void processElevatorRequest() {}
-    public synchronized void sendElevatorToScheduler(int floor, int button, int requestNumber) {}
-    public synchronized void sendSchedulerToFloor() {}
+    public synchronized int retrieveElevatorNotification() {
+        // Notifies the scheduler which floor sensor the elevator has just passed
+        while (!notifiedFloorSensor) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        notifiedFloorSensor = false;
+        notifyAll();
+        return currentFloor;
+    }
 }
