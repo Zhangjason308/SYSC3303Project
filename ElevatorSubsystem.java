@@ -8,36 +8,37 @@ package SYSC3303Project;
  */
 public class ElevatorSubsystem implements Runnable {
 
-    private int TIME_FOR_1_FLOOR;
+    private final TRAVEL_TIME_1 = 14.05;
 
-    private int TIME_FOR_2_FLOOR;
+    private float TRAVEL_TIME_2 = 20.74;
 
-    private int TIME_FOR_3_FLOOR;
+    private float TRAVEL_TIME_3 = 26;
 
-    private int TIME_FOR_1_PERSON;
+    private float LOADING_TIME = 10.50;
 
-    private int TIME_FOR_2_PERSON;
-
-    private int TIME_FOR_3_PERSON;
-
-    private int TIME_FOR_4_PERSON;
     Synchronizer synchronizer;
 
     private int currentFloor;
+
+    private Synchronizer synchronizer;
+
+    private ArrayList<float> floorTimes = new ArrayList<>();
     public ElevatorSubsystem(Synchronizer synchronizer) {
         this.synchronizer = synchronizer;
-        
+        floorTimes.add(STATIONARY);
+        floorTimes.add(TRAVEL_TIME_1);
+        floorTimes.add(TRAVEL_TIME_2);
+        floorTimes.add(TRAVEL_TIME_3);
     }
 
     public void move(int currentFloor, int destinationFloor) {
         int floorsToMove = Math.abs(currentFloor - destinationFloor);
-        Thread.sleep();
+        Thread.sleep(floorTimes[floorsToMove]);
+        Thread.sleep(LOADING_TIME);
     }
     public void run() {
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-        }
+        synchronizer.processElevatorRequest();
+
 
     }
 
