@@ -12,7 +12,7 @@ import java.io.IOException;
  */
 public class FloorSubsystem implements Runnable {
 
-    private Synchronizer synchronizer;
+    private final Synchronizer synchronizer;
     public FloorSubsystem(Synchronizer synchronizer) {
         this.synchronizer = synchronizer;
     }
