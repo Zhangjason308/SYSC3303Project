@@ -21,6 +21,7 @@ public class ElevatorSubsystem implements Runnable {
             try {
                 int destinationFloor = synchronizer.processElevatorRequest();
                 System.out.println("Elevator has arrived at floor " + destinationFloor + ", passengers have been dropped off");
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
