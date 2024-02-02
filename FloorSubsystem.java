@@ -13,8 +13,11 @@ import java.io.IOException;
 public class FloorSubsystem implements Runnable {
 
     private final Synchronizer synchronizer;
-    public FloorSubsystem(Synchronizer synchronizer) {
+
+    private String fileName;
+    public FloorSubsystem(Synchronizer synchronizer, String fileName) {
         this.synchronizer = synchronizer;
+        this.fileName = fileName;
     }
 
     public FloorData parseInput (String inputLine) {
@@ -26,7 +29,7 @@ public class FloorSubsystem implements Runnable {
         return new FloorData(time, floor, direction, button);
     }
     public void run() {
-        String filepath = "SYSC3303Project/ElevatorEvents.csv";
+        String filepath = fileName;
         FileReader fileReader = null;
         try {
             fileReader = new FileReader(filepath);
