@@ -8,6 +8,8 @@ package SYSC3303Project;
  */
 public class ElevatorSubsystem implements Runnable {
 
+    private final STATIONARY = 0;
+
     private final TRAVEL_TIME_1 = 14.05;
 
     private float TRAVEL_TIME_2 = 20.74;
@@ -31,7 +33,7 @@ public class ElevatorSubsystem implements Runnable {
         floorTimes.add(TRAVEL_TIME_3);
     }
 
-    public void move(int currentFloor, int destinationFloor) {
+    public void move(int currentFloor, DirectionEnum direction, int destinationFloor) {
         int floorsToMove = Math.abs(currentFloor - destinationFloor);
         Thread.sleep(floorTimes[floorsToMove]);
         Thread.sleep(LOADING_TIME);
