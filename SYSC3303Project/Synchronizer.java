@@ -7,7 +7,6 @@ public class Synchronizer {
     //Create separate locks/critical sections for various synchronous methods
     private ArrayList<FloorData> elevatorCommands = new ArrayList<>();
     private final int MAX_QUEUE_LENGTH = 4;
-
     private FloorData selectedCommand;
 
 
@@ -47,11 +46,14 @@ public class Synchronizer {
         }
         System.out.println("Elevator is moving to floor " + selectedCommand.getArrivalFloor() + " to pickup passenger");
         Thread.sleep(2000);
+        System.out.println("Elevator has arrived at floor " + selectedCommand.getArrivalFloor());
+        Thread.sleep(2000);
         System.out.println("Elevator is moving to floor " + selectedCommand.getDestinationFloor());
         Thread.sleep(5000);
+        int destination = selectedCommand.getDestinationFloor();
         selectedCommand = null;
         notifyAll();
-        return selectedCommand.getDestinationFloor();
+        return destination;
     }
 
 }

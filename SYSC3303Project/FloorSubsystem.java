@@ -26,7 +26,7 @@ public class FloorSubsystem implements Runnable {
         return new FloorData(time, floor, direction, button);
     }
     public void run() {
-        String filepath = "ElevatorEvents.csv";
+        String filepath = "SYSC3303Project/ElevatorEvents.csv";
         FileReader fileReader = null;
         try {
             fileReader = new FileReader(filepath);
