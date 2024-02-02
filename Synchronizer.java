@@ -3,6 +3,8 @@ package SYSC3303Project;
 import java.util.ArrayList;
 
 public class Synchronizer {
+
+    //Create separate locks/critical sections for various synchronous methods
     private ArrayList<FloorData> elevatorCommands = new ArrayList<>();
     private final int MAX_QUEUE_LENGTH = 4;
 
