@@ -2,9 +2,13 @@ package SYSC3303Project;
 
 import java.util.ArrayList;
 
+/**
+ * Synchronizer.java
+ * This class is a thread-safe synchronizer for an elevator real-time system. This contains various methods for
+ * the client and server threads to perform.
+ */
 public class Synchronizer {
 
-    //Create separate locks/critical sections for various synchronous methods
     private ArrayList<FloorData> elevatorCommands = new ArrayList<>();
     private final int MAX_QUEUE_LENGTH = 4;
     private FloorData selectedCommand;
@@ -46,6 +50,7 @@ public class Synchronizer {
         notifyAll();
     }
 
+    // Elevator processes the command if there is a command retrieved
     public synchronized int processElevatorRequest() throws InterruptedException {
         while (selectedCommand == null) {
             try {

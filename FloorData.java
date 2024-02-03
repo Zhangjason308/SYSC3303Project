@@ -1,5 +1,11 @@
 package SYSC3303Project;
 
+/**
+ * FloorData.java
+ * This class is the data structure used to parse the inputline from the text file
+ * into a command for the elevator to use. The data structure consists of the time the button is pressed,
+ * the floor number of button pressed, the direction of the button, and the destination floor.
+ */
 public class FloorData {
 
     private String time;
