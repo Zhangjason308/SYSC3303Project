@@ -13,14 +13,13 @@ public class ThreadMain {
         // Create the client and server threads, passing each thread
         // a reference to the shared synchronizer object.
         synchronizer = new Synchronizer();
-        floor = new Thread(new FloorSubsystem(synchronizer, "ElevatorEvents.csv"),"floor subsystem");
-        elevator = new Thread(new ElevatorSubsystem(synchronizer),"elevator subsystem");
-        scheduler = new Thread(new SchedulerSubsystem(synchronizer),"scheduler subsystem");
+      
 
 
         // start the threads
         floor.start();
         elevator.start();
-        scheduler.start();;
+        scheduler.start();
     }
 }
+

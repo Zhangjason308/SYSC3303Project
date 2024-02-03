@@ -11,14 +11,17 @@ import java.io.IOException;
  * the Elevator movement.
  */
 public class FloorSubsystem implements Runnable {
-
     private final Synchronizer synchronizer;
-
     private String fileName;
+
+
     public FloorSubsystem(Synchronizer synchronizer, String fileName) {
         this.synchronizer = synchronizer;
         this.fileName = fileName;
     }
+
+    public Synchronizer getSynchronizer() {return synchronizer;}
+    public String getFileName() {return fileName;}
 
     public FloorData parseInput (String inputLine) {
         String[] commands = inputLine.split("\\s+");
@@ -28,6 +31,8 @@ public class FloorSubsystem implements Runnable {
         int button = Integer.parseInt(commands[3]);
         return new FloorData(time, floor, direction, button);
     }
+
+
     public void run() {
         String filepath = fileName;
         FileReader fileReader = null;
@@ -44,7 +49,7 @@ public class FloorSubsystem implements Runnable {
             while (((line = bufferedReader.readLine()) != null)) {
                 FloorData inputLine = parseInput(line);
                 Thread.sleep(1000); // next line time - current line time
-               synchronizer.sendInputLine(inputLine);
+                synchronizer.sendInputLine(inputLine);
 
             }
         } catch (IOException | InterruptedException ie) {
@@ -53,6 +58,9 @@ public class FloorSubsystem implements Runnable {
         //call scheduler and give it the line
         try {
             Thread.sleep(1000);
-        } catch (InterruptedException e) {}
+        } catch (InterruptedException e) {
+
         }
+    }
+
 }
