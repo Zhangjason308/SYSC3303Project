@@ -24,17 +24,17 @@ To import the project into IntelliJ IDEA from VCS:
 - `ElevatorEvents.csv`: Input file for floor subsystem.
 
 ## Sample Output
-Elevator is moving to floor 1 to pickup passenger
-Elevator has arrived at floor 1
-Elevator is moving to floor 4
-Elevator has arrived at floor 4, passengers have been dropped off
-Elevator is moving to floor 2 to pickup passenger
-Elevator has arrived at floor 2
-Elevator is moving to floor 4
-Elevator has arrived at floor 4, passengers have been dropped off
-Elevator is moving to floor 3 to pickup passenger
-Elevator has arrived at floor 3
-Elevator is moving to floor 4
+Elevator is moving to floor 1 to pickup passenger  
+Elevator has arrived at floor 1  
+Elevator is moving to floor 4  
+Elevator has arrived at floor 4, passengers have been dropped off  
+Elevator is moving to floor 2 to pickup passenger  
+Elevator has arrived at floor 2  
+Elevator is moving to floor 4  
+Elevator has arrived at floor 4, passengers have been dropped off  
+Elevator is moving to floor 3 to pickup passenger  
+Elevator has arrived at floor 3  
+Elevator is moving to floor 4  
 Elevator has arrived at floor 4, passengers have been dropped off
 
 
