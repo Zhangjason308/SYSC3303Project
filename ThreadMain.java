@@ -17,6 +17,6 @@ public class ThreadMain {
         // start the threads
         floor.start();
         elevator.start();
-        scheduler.start();;
+        scheduler.start();
     }
 }

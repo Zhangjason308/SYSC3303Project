@@ -9,7 +9,6 @@ import java.util.ArrayList;
  * the Elevator movement.
  */
 public class ElevatorSubsystem implements Runnable {
-
     private Synchronizer synchronizer;
 
     public ElevatorSubsystem(Synchronizer synchronizer) {

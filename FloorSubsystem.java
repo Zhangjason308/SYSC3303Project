@@ -13,7 +13,6 @@ import java.io.IOException;
 public class FloorSubsystem implements Runnable {
 
     private final Synchronizer synchronizer;
-
     private String fileName;
     public FloorSubsystem(Synchronizer synchronizer, String fileName) {
         this.synchronizer = synchronizer;
@@ -44,7 +43,7 @@ public class FloorSubsystem implements Runnable {
             while (((line = bufferedReader.readLine()) != null)) {
                 FloorData inputLine = parseInput(line);
                 Thread.sleep(1000); // next line time - current line time
-               synchronizer.sendInputLine(inputLine);
+                synchronizer.sendInputLine(inputLine);
 
             }
         } catch (IOException | InterruptedException ie) {
