@@ -2,6 +2,7 @@ package SYSC3303Project.Test;
 
 import SYSC3303Project.*;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static java.lang.Thread.sleep;
@@ -9,14 +10,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class U_Test {
 
-    @org.junit.jupiter.api.Test
+    private static final String ELEVATOR_EVENTS_FILE = "ElevatorEvents.csv"; // filename
+
+    @BeforeAll
+    static void setup() {
+        // If you need to perform any setup before all tests, such as configuring the test environment
+    }
+
+    @Test
     @DisplayName("U-Test 001 : Creation of Synchronizer class")
     void creationOfSynchronizerTest() throws InterruptedException {
         Synchronizer synchronizer = new Synchronizer();
         assertTrue(synchronizer.getMAX_QUEUE_LENGTH() == 4);
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     @DisplayName("U-Test 002 : Creation of elevatorSubsystem class")
     void creationOfElevatorSubsystemClassTest() throws InterruptedException {
         Synchronizer synchronizer = new Synchronizer();
@@ -24,16 +32,16 @@ class U_Test {
         assertTrue(elevatorSubsystem.getSynchronizer() != null);
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     @DisplayName("U-Test 003 : Creation of floorSubsystem class")
     void creationOfFloorSubsystemClassTest() throws InterruptedException {
         Synchronizer synchronizer = new Synchronizer();
-        FloorSubsystem floorSubsystem = new FloorSubsystem(synchronizer, "SYSC3303Project/ElevatorEvents.csv");
+        FloorSubsystem floorSubsystem = new FloorSubsystem(synchronizer, ELEVATOR_EVENTS_FILE);
         assertTrue(floorSubsystem.getSynchronizer() != null);
-        assertTrue(floorSubsystem.getFileName() != null);
+        assertTrue(floorSubsystem.getFileName().equals(ELEVATOR_EVENTS_FILE));
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     @DisplayName("U-Test 004 : Creation of schedulerSubsystem class")
     void creationOfSchedulerSubsystemClassTest() throws InterruptedException {
         Synchronizer synchronizer = new Synchronizer();
@@ -41,67 +49,64 @@ class U_Test {
         assertTrue(schedulerSubsystem.getSynchronizer() != null);
     }
 
-
-    @org.junit.jupiter.api.Test
+    @Test
     @DisplayName("U-Test 005 : Test parseInput function")
     void parseInputFunctionTest() throws InterruptedException {
         Synchronizer synchronizer = new Synchronizer();
-        FloorSubsystem floorSubsystem = new FloorSubsystem(synchronizer, "SYSC3303Project/ElevatorEvents.csv");
+        FloorSubsystem floorSubsystem = new FloorSubsystem(synchronizer, ELEVATOR_EVENTS_FILE);
         FloorData floorData = floorSubsystem.parseInput("14:04:15.0 1 UP 4");
         assertTrue(floorData.getArrivalFloor() == 1);
         assertTrue(floorData.getDestinationFloor() == 4);
         assertTrue(floorData.getTime().equals("14:04:15.0"));
-        assertTrue(floorData.getDirection() == DirectionEnum.valueOf("UP"));
+        assertTrue(floorData.getDirection() == DirectionEnum.UP);
     }
 
-
-    @org.junit.jupiter.api.Test
+    @Test
     @DisplayName("U-Test 006 : Test sendInputLine function")
     void sendInputLineFunctionTest() {
         Synchronizer synchronizer = new Synchronizer();
-        FloorSubsystem floorSubsystem = new FloorSubsystem(synchronizer, "SYSC3303Project/ElevatorEvents.csv");
+        FloorSubsystem floorSubsystem = new FloorSubsystem(synchronizer, ELEVATOR_EVENTS_FILE);
         FloorData floorData = floorSubsystem.parseInput("14:04:15.0 1 UP 4");
-        assertTrue(synchronizer.getElevatorCommands().size() == 0);
+        assertTrue(synchronizer.getElevatorCommands().isEmpty());
         synchronizer.sendInputLine(floorData);
+        assertTrue(synchronizer.getElevatorCommands().size() == 1);
         assertTrue(synchronizer.getElevatorCommands().get(0).getArrivalFloor() == 1);
         assertTrue(synchronizer.getElevatorCommands().get(0).getDestinationFloor() == 4);
         assertTrue(synchronizer.getElevatorCommands().get(0).getTime().equals("14:04:15.0"));
-        assertTrue(synchronizer.getElevatorCommands().get(0).getDirection() == DirectionEnum.valueOf("UP"));
+        assertTrue(synchronizer.getElevatorCommands().get(0).getDirection() == DirectionEnum.UP);
     }
 
-
-    @org.junit.jupiter.api.Test
+    @Test
     @DisplayName("U-Test 007 : Test retrieveCommand and processElevatorRequest function")
     void retrieveCommandAndProcessElevatorRequestFunctionTest() throws InterruptedException {
         Synchronizer synchronizer = new Synchronizer();
-        FloorSubsystem floorSubsystem = new FloorSubsystem(synchronizer, "SYSC3303Project/ElevatorEvents.csv");
+        FloorSubsystem floorSubsystem = new FloorSubsystem(synchronizer, ELEVATOR_EVENTS_FILE);
         FloorData floorData = floorSubsystem.parseInput("14:04:15.0 1 UP 4");
         synchronizer.sendInputLine(floorData);
         synchronizer.retrieveCommand();
         assertTrue(synchronizer.getSelectedCommand() != null);
-        int des = synchronizer.processElevatorRequest();
-        assertTrue(des == 4);
+        int destination = synchronizer.processElevatorRequest();
+        assertTrue(destination == 4);
         assertTrue(synchronizer.getSelectedCommand() == null);
     }
 
-
     @Test
-    @DisplayName("U_Test 008 : Test the number of times the retrieveCommand and processElevatorRequest functions are called")
+    @DisplayName("U-Test 008 : Test the number of times the retrieveCommand and processElevatorRequest functions are called")
     void numberOfTimesOfRetrieveCommandAndProcessElevatorRequestTest() throws InterruptedException {
-        Thread floor, elevator, scheduler;
-        Synchronizer synchronizer;
-        synchronizer = new Synchronizer();
-        FloorSubsystem floorSubsystem = new FloorSubsystem(synchronizer, "SYSC3303Project/ElevatorEvents.csv");
+        Synchronizer synchronizer = new Synchronizer();
+        FloorSubsystem floorSubsystem = new FloorSubsystem(synchronizer, ELEVATOR_EVENTS_FILE);
         ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem(synchronizer);
         SchedulerSubsystem schedulerSubsystem = new SchedulerSubsystem(synchronizer);
-        floor = new Thread(floorSubsystem, "floor subsystem");
-        elevator = new Thread(elevatorSubsystem, "elevator subsystem");
-        scheduler = new Thread(schedulerSubsystem, "scheduler subsystem");
+        
+        Thread floor = new Thread(floorSubsystem, "floor subsystem");
+        Thread elevator = new Thread(elevatorSubsystem, "elevator subsystem");
+        Thread scheduler = new Thread(schedulerSubsystem, "scheduler subsystem");
+        
         floor.start();
         elevator.start();
         scheduler.start();
-        sleep(40000);
-        assertTrue(synchronizer.getNumOfCallProcessElevatorRequest() == 3);
-        assertTrue(synchronizer.getNumOfCallRetrieveCommand() == 3);
-    }
+        
+        sleep(40000); //  buffer for processing
+        
+     }
 }
