@@ -10,8 +10,10 @@ To import the project into IntelliJ IDEA from VCS:
 1. Open IntelliJ IDEA and select **"Get from Version Control"** on the welcome screen.
 2. In the URL field, enter `https://github.com/Zhangjason308/SYSC3303Project.git`.
 3. Choose the directory where you want to clone the project and click **"Clone"**.
-4. Once cloned, IntelliJ IDEA may automatically set up everything needed to run the project. If not, proceed to open the project in IntelliJ IDEA, and it should prompt you to import Gradle or Maven projects if applicable.
-5. Ensure Java SDK is set up in the project structure. This project is developed with Java 11 but should be compatible with most Java versions.
+4. Once cloned, IntelliJ IDEA may NOT automatically set up everything needed to run the project.
+   To run the unit tests for the `U_Test` class:
+   Add 'JUnit5.8.1' to class path via 💡ContextActions
+5. Ensure Java SDK 21.0.1 is set up in the project structure. This project is developed with Java 21 but should be compatible with most Java versions.
 
 ## Project Structure
 - `DirectionEnum.java`: Defines elevator movement directions.
