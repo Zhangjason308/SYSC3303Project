@@ -1,5 +1,11 @@
 package SYSC3303Project;
 
+/**
+ * SchedulerSubsystem.java
+ * This class is a scheduler subsystem for an elevator real-time system. This subsystem
+ * is a server thread that retrieves an elevator command from a queue, and then tells the elevator
+ * to act on that command.
+ */
 public class SchedulerSubsystem implements Runnable {
 
     Synchronizer synchronizer;
