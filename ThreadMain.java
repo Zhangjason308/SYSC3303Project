@@ -9,9 +9,12 @@ public class ThreadMain {
         // Create the agent and barista threads, passing each thread
         // a reference to the shared counter object.
         synchronizer = new Synchronizer();
-        floor = new Thread(new FloorSubsystem(synchronizer, "SYSC3303Project/ElevatorEvents.csv"),"floor subsystem");
-        elevator = new Thread(new ElevatorSubsystem(synchronizer),"elevator subsystem");
-        scheduler = new Thread(new SchedulerSubsystem(synchronizer),"scheduler subsystem");
+        FloorSubsystem floorSubsystem = new FloorSubsystem(synchronizer, "SYSC3303Project/ElevatorEvents.csv");
+        ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem(synchronizer);
+        SchedulerSubsystem schedulerSubsystem = new SchedulerSubsystem(synchronizer);
+        floor = new Thread(floorSubsystem, "floor subsystem");
+        elevator = new Thread(elevatorSubsystem, "elevator subsystem");
+        scheduler = new Thread(schedulerSubsystem, "scheduler subsystem");
 
 
         // start the threads
@@ -20,3 +23,4 @@ public class ThreadMain {
         scheduler.start();
     }
 }
+

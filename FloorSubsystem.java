@@ -20,6 +20,8 @@ public class FloorSubsystem implements Runnable {
         this.fileName = fileName;
     }
 
+    public Synchronizer getSynchronizer() {return synchronizer;}
+    public String getFileName() {return fileName;}
 
     public FloorData parseInput (String inputLine) {
         String[] commands = inputLine.split("\\s+");
@@ -56,6 +58,9 @@ public class FloorSubsystem implements Runnable {
         //call scheduler and give it the line
         try {
             Thread.sleep(1000);
-        } catch (InterruptedException e) {}
+        } catch (InterruptedException e) {
+
         }
+    }
+
 }

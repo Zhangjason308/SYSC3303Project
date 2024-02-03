@@ -10,13 +10,14 @@ import java.util.ArrayList;
  */
 public class ElevatorSubsystem implements Runnable {
     private Synchronizer synchronizer;
-
     public ElevatorSubsystem(Synchronizer synchronizer) {
         this.synchronizer = synchronizer;
     }
 
+    public Synchronizer getSynchronizer() {return synchronizer;}
+
     public void run() {
-        while (true){
+        while (synchronizer.getNumOfCallProcessElevatorRequest() < 3){
             try {
                 int destinationFloor = synchronizer.processElevatorRequest();
                 System.out.println("Elevator has arrived at floor " + destinationFloor + ", passengers have been dropped off");
@@ -25,5 +26,8 @@ public class ElevatorSubsystem implements Runnable {
                 throw new RuntimeException(e);
             }
         }
+
+        System.out.println("processElevatorRequest function was called " + synchronizer.getNumOfCallProcessElevatorRequest() + " times");
     }
+
 }
