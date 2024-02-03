@@ -38,6 +38,14 @@ Elevator is moving to floor 4
 Elevator has arrived at floor 4, passengers have been dropped off
 
 
+## Unit Testing Instructions
+To run the unit tests for the `U_Test` class:
+
+### Using IntelliJ IDEA
+1. Navigate to the `src/test/java/SYSC3303Project/Test` directory in the Project view.
+2. Right-click on the `U_Test` class and select **Run 'U_Test'**.
+3. IntelliJ IDEA will execute all the unit tests in the `U_Test` class, and you can view the results in the Run window.
+
 ## Contributions
 - **Jason Zhang 101191526**
   - `DirectionEnum.java`
