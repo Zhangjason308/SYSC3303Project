@@ -4,12 +4,9 @@ public class FloorData {
 
     private String time;
     private int arrivalFloor;
-
     private DirectionEnum direction;
-
     private int destinationFloor;
 
-    public FloorData() {}
 
     public FloorData(String time, int arrivalFloor, DirectionEnum direction, int destinationFloor) {
         this.time = time;

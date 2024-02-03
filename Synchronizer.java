@@ -23,6 +23,10 @@ public class Synchronizer {
         notifyAll();
     }
 
+    public ArrayList<FloorData> getElevatorCommands() {
+        return elevatorCommands;
+    }
+
     // Scheduler selects a command from the Queue if there is a command in the queue
     public synchronized void retrieveCommand () {
         while (elevatorCommands.isEmpty()) {
