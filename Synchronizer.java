@@ -8,7 +8,7 @@ public class Synchronizer {
     private ArrayList<FloorData> elevatorCommands = new ArrayList<>();
     private final int MAX_QUEUE_LENGTH = 4;
     private FloorData selectedCommand;
-
+    public FloorData getSelectedCommand() {return selectedCommand;}
 
     // Floor sends input to the Synchronizer if the queue is not full
     public synchronized void sendInputLine(FloorData floorData) {

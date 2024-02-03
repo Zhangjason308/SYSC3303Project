@@ -32,4 +32,19 @@ class Test {
         assertTrue(synchronizer.getElevatorCommands().get(0).getTime().equals("14:04:15.0"));
         assertTrue(synchronizer.getElevatorCommands().get(0).getDirection() == DirectionEnum.valueOf("UP"));
     }
+
+
+    @org.junit.jupiter.api.Test
+    @DisplayName("U-Test 003 : Test retrieveCommand and processElevatorRequest function")
+    void retrieveCommandAndProcessElevatorRequestFunctionTest() throws InterruptedException {
+        Synchronizer synchronizer = new Synchronizer();
+        FloorSubsystem floorSubsystem = new FloorSubsystem(synchronizer, "SYSC3303Project/ElevatorEvents.csv");
+        FloorData floorData = floorSubsystem.parseInput("14:04:15.0 1 UP 4");
+        synchronizer.sendInputLine(floorData);
+        synchronizer.retrieveCommand();
+        assertTrue(synchronizer.getSelectedCommand() != null);
+        int des = synchronizer.processElevatorRequest();
+        assertTrue(des == 4);
+        assertTrue(synchronizer.getSelectedCommand() == null);
+    }
 }
