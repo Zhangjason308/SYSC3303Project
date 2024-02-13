@@ -1,5 +1,7 @@
 package SYSC3303Project;
 
+import SYSC3303Project.Floor.FloorData;
+
 import java.util.ArrayList;
 
 /**
@@ -64,7 +66,7 @@ public class Synchronizer {
         System.out.println("Elevator has arrived at floor " + selectedCommand.getArrivalFloor());
         Thread.sleep(2000);
         System.out.println("Elevator is moving to floor " + selectedCommand.getDestinationFloor());
-        Thread.sleep(5000);
+        Thread.sleep(3000);
         int destination = selectedCommand.getDestinationFloor();
         selectedCommand = null;
         numOfCallProcessElevatorRequest++;

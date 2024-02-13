@@ -1,5 +1,9 @@
 package SYSC3303Project;
 
+import SYSC3303Project.Elevator.ElevatorSubsystem;
+import SYSC3303Project.Floor.FloorSubsystem;
+import SYSC3303Project.Scheduler.SchedulerSubsystem;
+
 /**
  * ThreadMain.java
  * This class runs the application using the example "ElevatorEvents.csv" as a sample list of commands
