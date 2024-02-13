@@ -1,4 +1,6 @@
-package SYSC3303Project;
+package SYSC3303Project.Scheduler;
+
+import SYSC3303Project.Synchronizer;
 
 /**
  * SchedulerSubsystem.java
@@ -7,6 +9,7 @@ package SYSC3303Project;
  * to act on that command.
  */
 public class SchedulerSubsystem implements Runnable {
+
     Synchronizer synchronizer;
 
     public SchedulerSubsystem(Synchronizer synchronizer) {
@@ -21,6 +24,6 @@ public class SchedulerSubsystem implements Runnable {
             synchronizer.retrieveCommand();
         }
 
-        System.out.println("retrieveComman function was called " + synchronizer.getNumOfCallRetrieveCommand() + " times");
+        System.out.println("retrieveCommand function was called " + synchronizer.getNumOfCallRetrieveCommand() + " times");
     }
 }

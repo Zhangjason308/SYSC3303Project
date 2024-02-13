@@ -1,4 +1,8 @@
-package SYSC3303Project;
+package SYSC3303Project.Floor;
+
+import SYSC3303Project.DirectionEnum;
+import SYSC3303Project.Floor.FloorData;
+import SYSC3303Project.Synchronizer;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;

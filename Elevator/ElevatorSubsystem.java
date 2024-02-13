@@ -1,6 +1,8 @@
-package SYSC3303Project;
+package SYSC3303Project.Elevator;
 
-import java.util.ArrayList;
+import SYSC3303Project.Synchronizer;
+
+import java.util.*;
 
 /**
  * ElevatorSubsystemClient.java
@@ -9,12 +11,33 @@ import java.util.ArrayList;
  * the Elevator movement.
  */
 public class ElevatorSubsystem implements Runnable {
+
+
+
+    private String direction;
+    private Map<String, ElevatorState> states;
+    private ElevatorState currentState;
     private Synchronizer synchronizer;
+
     public ElevatorSubsystem(Synchronizer synchronizer) {
+
         this.synchronizer = synchronizer;
+        states = new HashMap<>();
+        // Add states to the map
+        addState("Idle", new Idle());
+        addState("MovingUp", new MovingUp());
+        addState("MovingDown", new MovingDown());
+        addState("Stopped", new Stopped());
+        addState("DoorsOpen", new DoorsOpen());
+        addState("DoorsClosed", new DoorsClosed());
+
+
     }
 
     public Synchronizer getSynchronizer() {return synchronizer;}
+    public String getDirection() {
+        return direction;
+    }
 
     public void run() {
         while (synchronizer.getNumOfCallProcessElevatorRequest() < 3){
@@ -29,5 +52,18 @@ public class ElevatorSubsystem implements Runnable {
 
         System.out.println("processElevatorRequest function was called " + synchronizer.getNumOfCallProcessElevatorRequest() + " times");
     }
+
+    public void setState(String state){
+        this.currentState = getState(state);
+    }
+    public void addState(String stateName, ElevatorState state) {
+        states.put(stateName, state);
+    }
+
+    public ElevatorState getState(String stateName) {
+        return states.get(stateName);
+    }
+
+    public void
 
 }

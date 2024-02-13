@@ -1,4 +1,6 @@
-package SYSC3303Project;
+package SYSC3303Project.Floor;
+
+import SYSC3303Project.DirectionEnum;
 
 /**
  * FloorData.java
