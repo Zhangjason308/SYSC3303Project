@@ -1,76 +1,61 @@
 package SYSC3303Project;
 
 import SYSC3303Project.Floor.FloorData;
+import java.util.LinkedList;
+import java.util.Queue;
 
-import java.util.ArrayList;
-
-/**
- * Synchronizer.java
- * This class is a thread-safe synchronizer for an elevator real-time system. This contains various methods for
- * the client and server threads to perform.
- */
 public class Synchronizer {
+    private int currentFloor = 1; // Default floor before any movement
 
-    private ArrayList<FloorData> elevatorCommands = new ArrayList<>();
-    private final int MAX_QUEUE_LENGTH = 4;
-    private FloorData selectedCommand;
-    public FloorData getSelectedCommand() {return selectedCommand;}
-    private int numOfCallRetrieveCommand = 0;
-    private int numOfCallProcessElevatorRequest = 0;
-    public int getNumOfCallRetrieveCommand() {return numOfCallRetrieveCommand;}
-    public int getNumOfCallProcessElevatorRequest() {return numOfCallProcessElevatorRequest;}
-    public int getMAX_QUEUE_LENGTH() {return MAX_QUEUE_LENGTH;}
+    // Queue for commands from floors to the scheduler
+    private final Queue<FloorData> floorCommandQueue = new LinkedList<>();
+    // Queue for commands from the scheduler to the elevator
+    private final Queue<FloorData> schedulerCommandQueue = new LinkedList<>();
 
-    // Floor sends input to the Synchronizer if the queue is not full
-    public synchronized void sendInputLine(FloorData floorData) {
-        while (elevatorCommands.size()  >= MAX_QUEUE_LENGTH) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        elevatorCommands.add(floorData);
-        notifyAll();
+    // Method to add a command from a floor
+    public synchronized void addFloorCommand(FloorData command) {
+        floorCommandQueue.offer(command);
+        notifyAll(); // Notify the scheduler that a new command is available
     }
 
-    public ArrayList<FloorData> getElevatorCommands() {
-        return elevatorCommands;
+    // Method for the scheduler to retrieve the next command from a floor
+    public synchronized FloorData getNextFloorCommand() throws InterruptedException {
+        while (floorCommandQueue.isEmpty()) {
+            wait(); // Wait until a command is available
+        }
+        return floorCommandQueue.poll();
     }
 
-    // Scheduler selects a command from the Queue if there is a command in the queue
-    public synchronized void retrieveCommand () {
-        while (elevatorCommands.isEmpty()) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        selectedCommand =  elevatorCommands.remove(0);
-        numOfCallRetrieveCommand++;
-        notifyAll();
+    // Method for the scheduler to add a command for the elevator
+    public synchronized void addSchedulerCommand(FloorData command) {
+        schedulerCommandQueue.offer(command);
+        notifyAll(); // Notify the elevator subsystem that a new command is available
     }
 
-    // Elevator processes the command if there is a command retrieved
-    public synchronized int processElevatorRequest() throws InterruptedException {
-        while (selectedCommand == null) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+    // Method for the elevator to retrieve the next command from the scheduler
+    public synchronized FloorData getNextSchedulerCommand() throws InterruptedException {
+        while (schedulerCommandQueue.isEmpty()) {
+            wait(); // Wait until a command is available
         }
-        System.out.println("Elevator is moving to floor " + selectedCommand.getArrivalFloor() + " to pickup passenger");
-        Thread.sleep(2000);
-        System.out.println("Elevator has arrived at floor " + selectedCommand.getArrivalFloor());
-        Thread.sleep(2000);
-        System.out.println("Elevator is moving to floor " + selectedCommand.getDestinationFloor());
-        Thread.sleep(3000);
-        int destination = selectedCommand.getDestinationFloor();
-        selectedCommand = null;
-        numOfCallProcessElevatorRequest++;
-        notifyAll();
-        return destination;
+        return schedulerCommandQueue.poll();
+    }
+
+    // Utility methods if needed for checking queues are not empty (optional)
+    public synchronized boolean hasFloorCommands() {
+        return !floorCommandQueue.isEmpty();
+    }
+
+    public synchronized boolean hasSchedulerCommands() {
+        return !schedulerCommandQueue.isEmpty();
+    }
+
+    public synchronized void arrivalSensor(int floor) {
+        this.currentFloor = floor;
+        notifyAll(); // Notify waiting threads, such as the SchedulerSubsystem
+    }
+
+    // Method for the SchedulerSubsystem to get the current floor
+    public synchronized int getCurrentFloor() {
+        return this.currentFloor;
     }
 }

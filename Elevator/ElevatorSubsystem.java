@@ -1,69 +1,120 @@
 package SYSC3303Project.Elevator;
 
+import SYSC3303Project.DirectionEnum;
+import SYSC3303Project.Floor.FloorData;
 import SYSC3303Project.Synchronizer;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.PriorityQueue;
 
-/**
- * ElevatorSubsystemClient.java
- * This class is a elevator subsystem for an elevator real-time system. This subsystem
- * is a client thread that makes calls to the server thread, in which then it can perform
- * the Elevator movement.
- */
+import static SYSC3303Project.DirectionEnum.DOWN;
+import static SYSC3303Project.DirectionEnum.UP;
+
+
+
+
 public class ElevatorSubsystem implements Runnable {
-
-
-
-    private String direction;
-    private Map<String, ElevatorState> states;
-    private ElevatorState currentState;
+    private int currentFloor = 1; // Starting floor
+    private DirectionEnum currentDirection = DirectionEnum.UP; // Default direction is UP
+    private ElevatorStateMachine elevatorStateMachine;
     private Synchronizer synchronizer;
 
+
     public ElevatorSubsystem(Synchronizer synchronizer) {
-
         this.synchronizer = synchronizer;
-        states = new HashMap<>();
-        // Add states to the map
-        addState("Idle", new Idle());
-        addState("MovingUp", new MovingUp());
-        addState("MovingDown", new MovingDown());
-        addState("Stopped", new Stopped());
-        addState("DoorsOpen", new DoorsOpen());
-        addState("DoorsClosed", new DoorsClosed());
-
-
+        this.elevatorStateMachine = new ElevatorStateMachine();
     }
 
-    public Synchronizer getSynchronizer() {return synchronizer;}
-    public String getDirection() {
-        return direction;
-    }
-
+    @Override
     public void run() {
-        while (synchronizer.getNumOfCallProcessElevatorRequest() < 3){
+        while (!Thread.currentThread().isInterrupted()) {
             try {
-                int destinationFloor = synchronizer.processElevatorRequest();
-                System.out.println("Elevator has arrived at floor " + destinationFloor + ", passengers have been dropped off");
-                Thread.sleep(1000);
+                if (synchronizer.hasSchedulerCommands()) {
+                    FloorData command = synchronizer.getNextSchedulerCommand();
+                    if (command != null) {
+                        System.out.println("ElevatorSubSystem: Received Command :"+command);
+                        processCommand(command);
+                    }
+                }
+
+                Thread.sleep(100); // Sleep to reduce CPU usage when idle
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                System.out.println("ElevatorSubsystem interrupted.");
+                Thread.currentThread().interrupt();
+                break;
             }
         }
-
-        System.out.println("processElevatorRequest function was called " + synchronizer.getNumOfCallProcessElevatorRequest() + " times");
     }
 
-    public void setState(String state){
-        this.currentState = getState(state);
-    }
-    public void addState(String stateName, ElevatorState state) {
-        states.put(stateName, state);
+    private void processCommand(FloorData command) {
+        System.out.println("ElevatorSubsystem: Processing command: " + command);
+        int destinationFloor = command.getDestinationFloor();
+        int arrivalFloor = command.getArrivalFloor();
+
+        // Determine the direction for the current command
+        if (  arrivalFloor > currentFloor) {
+            currentDirection = UP;
+            moveToFloor(arrivalFloor,"boarding");
+        } else if (arrivalFloor < currentFloor) {
+            currentDirection = DOWN;
+            moveToFloor(arrivalFloor,"boarding");
+        } else {
+            elevatorStateMachine.setState("Stopped");
+            System.out.println("ElevatorSubsystem: Already at floor " + currentFloor);
+            elevatorStateMachine.setState("DoorsOpen");
+            System.out.println("ElevatorSubsystem: Passengers boarding");
+            elevatorStateMachine.setState("DoorsClosed");
+        }
+
+        // Move to the destination floor based on the command
+
+        moveToFloor(destinationFloor,"departing");
+        elevatorStateMachine.setState("Idle");
     }
 
-    public ElevatorState getState(String stateName) {
-        return states.get(stateName);
+    private void moveToFloor(int destinationFloor, String action) {
+        System.out.println("ElevatorSubsystem: Moving from floor " + currentFloor + " to floor " + destinationFloor);
+
+        if (currentFloor < destinationFloor) {
+            elevatorStateMachine.setState("MovingUp");
+            currentFloor = destinationFloor;
+            System.out.println("ElevatorSubsystem: Going up, now at floor " + currentFloor);
+
+
+
+
+        } else {
+            elevatorStateMachine.setState("MovingDown");
+            currentFloor = destinationFloor;
+            System.out.println("ElevatorSubsystem: Going down, now at floor " + currentFloor);
+
+
+        }
+
+        System.out.println("ElevatorSubsystem: Stopping at floor " + currentFloor);
+        elevatorStateMachine.setState("Stopped");
+        elevatorStateMachine.setState("DoorsOpen");
+        System.out.println("ElevatorSubsystem: Passenger " + action);
+        elevatorStateMachine.setState("DoorsClosed");
     }
 
-    public void
+    private void goUp() {
+        currentFloor++;
+        elevatorStateMachine.setState("MovingUp");
+        System.out.println("ElevatorSubsystem: Going up, now at floor " + currentFloor);
+    }
 
+    private void goDown() {
+        currentFloor--;
+        elevatorStateMachine.setState("MovingDown");
+        System.out.println("ElevatorSubsystem: Going down, now at floor " + currentFloor);
+    }
+
+    public int getCurrentFloor() {
+        return this.currentFloor;
+    }
+
+    public Synchronizer getSynchronizer() {
+        return synchronizer;
+    }
 }

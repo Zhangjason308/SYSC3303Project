@@ -52,8 +52,9 @@ public class FloorSubsystem implements Runnable {
         try {
             while (((line = bufferedReader.readLine()) != null)) {
                 FloorData inputLine = parseInput(line);
-                Thread.sleep(1000); // next line time - current line time
-                synchronizer.sendInputLine(inputLine);
+                Thread.sleep(200); // next line time - current line time
+                System.out.println("FLOOR_SUBSYSTEM: SENT REQUEST");
+                synchronizer.addFloorCommand(inputLine);
 
             }
         } catch (IOException | InterruptedException ie) {
