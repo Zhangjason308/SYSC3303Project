@@ -36,4 +36,8 @@ public class FloorData {
         return destinationFloor;
     }
 
+    @Override
+    public String toString() {
+        return "[Time: " + getTime() + ", Arrival Floor: " + getArrivalFloor() + ", Direction: " + getDirection() + ", Destination Floor: " + getDestinationFloor() +"]";
+    }
 }

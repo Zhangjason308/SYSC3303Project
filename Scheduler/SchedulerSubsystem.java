@@ -2,7 +2,7 @@ package SYSC3303Project.Scheduler;
 
 import SYSC3303Project.DirectionEnum;
 import SYSC3303Project.Floor.FloorData;
-import SYSC3303Project.Scheduler.SchedulerStateMachine;
+import SYSC3303Project.Scheduler.StateMachine.SchedulerStateMachine;
 import SYSC3303Project.Synchronizer;
 import java.util.PriorityQueue;
 import java.util.Comparator;
@@ -84,7 +84,7 @@ public class SchedulerSubsystem implements Runnable {
 
 
     private void dispatchToElevator(FloorData command) throws InterruptedException {
-        System.out.println("SCHEDULER_SUBSYSTEM: Dispatching FLOOR REQUEST to Elevator: " + command);
+        System.out.println("---------- SCHEDULER SUBSYSTEM: Dispatching Floor Request to Elevator: " + command + " ----------\n");
         synchronizer.addSchedulerCommand(command);
     }
 }
