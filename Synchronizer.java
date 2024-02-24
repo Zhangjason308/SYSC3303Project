@@ -51,19 +51,6 @@ public class Synchronizer {
         return !schedulerCommandQueue.isEmpty();
     }
 
-    public synchronized void arrivalSensor(int floor) throws InterruptedException {
-        while (!destinationSensor) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                System.err.println(e);
-            }
-        }
-        this.currentFloor = floor;
-        destinationSensor = false;
-        notifyAll(); // Notify waiting threads, such as the SchedulerSubsystem
-    }
-
     public void setDestinationSensor(boolean hasArrived) {
         destinationSensor = hasArrived;
     }

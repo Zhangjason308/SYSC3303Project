@@ -52,13 +52,4 @@ public class ElevatorStateMachine {
         }
     }
 
-
-    public String getCurrentState() {
-        for (Map.Entry<String, ElevatorState> entry : states.entrySet()) {
-            if (entry.getValue().equals(currentState)) {
-                return entry.getKey();
-            }
-        }
-        return "Unknown"; //
-    }
 }
