@@ -18,6 +18,8 @@ import static SYSC3303Project.DirectionEnum.UP;
 public class ElevatorSubsystem implements Runnable {
     private int currentFloor = 1; // Starting floor
     private ElevatorStateMachine elevatorStateMachine;
+    public ElevatorStateMachine getElevatorStateMachine() {return elevatorStateMachine;}
+
     private Synchronizer synchronizer;
 
 

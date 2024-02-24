@@ -15,6 +15,7 @@ import java.util.Comparator;
 public class SchedulerSubsystem implements Runnable {
     private Synchronizer synchronizer;
     private SchedulerStateMachine stateMachine;
+    public SchedulerStateMachine getStateMachine() {return stateMachine;}
 
     public SchedulerSubsystem(Synchronizer synchronizer) throws InterruptedException {
         this.synchronizer = synchronizer;

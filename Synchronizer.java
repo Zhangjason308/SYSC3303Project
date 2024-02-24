@@ -9,6 +9,8 @@ public class Synchronizer {
 
     // Queue for commands from floors to the scheduler
     private final Queue<FloorData> floorCommandQueue = new LinkedList<>();
+    public Queue<FloorData> getFloorCommandQueue() {return floorCommandQueue;}
+
     // Queue for commands from the scheduler to the elevator
     private final Queue<FloorData> schedulerCommandQueue = new LinkedList<>();
 

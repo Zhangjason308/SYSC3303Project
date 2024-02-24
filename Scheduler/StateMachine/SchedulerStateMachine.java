@@ -2,7 +2,9 @@ package SYSC3303Project.Scheduler.StateMachine;
 
 import SYSC3303Project.Scheduler.StateMachine.States.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -10,7 +12,14 @@ import java.util.Map;
  */
 public class SchedulerStateMachine {
     private Map<String, SchedulerState> states;
+    public Map<String, SchedulerState> getStates() {return states;}
     private SchedulerState currentState;
+
+
+    private  int triggerTime = 0;
+    public int getTriggerTime() {return triggerTime;}
+    List<String> stateChange = new ArrayList<>();
+    public List<String> getStateChange() {return stateChange;}
 
     public SchedulerStateMachine() {
         states = new HashMap<>();
@@ -46,6 +55,8 @@ public class SchedulerStateMachine {
 
     public void triggerEvent(String event) {
         currentState.handleEvent(this, event);
+        triggerTime++;
+        stateChange.add(event);
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {

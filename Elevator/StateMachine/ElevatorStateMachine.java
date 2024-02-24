@@ -2,7 +2,9 @@ package SYSC3303Project.Elevator.StateMachine;
 
 import SYSC3303Project.Elevator.StateMachine.States.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -10,7 +12,15 @@ import java.util.Map;
  */
 public class ElevatorStateMachine {
     private Map<String, ElevatorState> states;
+    public Map<String, ElevatorState> getStates() {return states;}
     private ElevatorState currentState;
+
+
+    private  int triggerTime = 0;
+    public int getTriggerTime() {return triggerTime;}
+    List<String> stateChange = new ArrayList<>();
+    public List<String> getStateChange() {return stateChange;}
+
 
     public ElevatorStateMachine() {
         states = new HashMap<>();
@@ -48,6 +58,8 @@ public class ElevatorStateMachine {
 
     public void triggerEvent(String event) {
         currentState.handleEvent(this, event);
+        triggerTime++;
+        stateChange.add(event);
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
@@ -55,4 +67,12 @@ public class ElevatorStateMachine {
         }
     }
 
+    public String getCurrentState(){
+        for(Map.Entry<String, ElevatorState> entry : states.entrySet()){
+            if(entry.getValue().equals(currentState)){
+                return entry.getKey();
+            }
+        }
+        return  null;
+    }
 }
