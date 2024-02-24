@@ -25,11 +25,11 @@ To import the project into IntelliJ IDEA from VCS:
 - `ThreadMain.java`: Entry point, initializes subsystems.
 - `ElevatorEvents.csv`: Input file for floor subsystem.
 
-## UML Class Diagram
-![UML CLASS Diagram](./Documentation/Iteration_1/UML_Class_Diagram.png)
+## UML Class Diagram Iteration 2
+![UML CLASS Diagram](./Documentation/Iteration_2/Master_UML_Class_Diagram.svg)
 
-## UML Sequence Diagram
-![UML SEQUENCE Diagram](./Documentation/Iteration_1/UML_Sequence_Diagram.png)
+## UML Sequence Diagram Iteration 2
+![UML SEQUENCE Diagram](./Documentation/Iteration_2/UML_SequenceDiagram_Iteration_2.png)
 
 ## Sample Output
 Elevator is moving to floor 1 to pickup passenger  
