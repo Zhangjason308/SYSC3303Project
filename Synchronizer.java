@@ -12,6 +12,8 @@ public class Synchronizer {
     // Queue for commands from the scheduler to the elevator
     private final Queue<FloorData> schedulerCommandQueue = new LinkedList<>();
 
+    private boolean destinationSensor = false;
+
     // Method to add a command from a floor
     public synchronized void addFloorCommand(FloorData command) {
         floorCommandQueue.offer(command);
@@ -49,11 +51,26 @@ public class Synchronizer {
         return !schedulerCommandQueue.isEmpty();
     }
 
-    public synchronized void arrivalSensor(int floor) {
+    public synchronized void arrivalSensor(int floor) throws InterruptedException {
+        while (!destinationSensor) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                System.err.println(e);
+            }
+        }
         this.currentFloor = floor;
+        destinationSensor = false;
         notifyAll(); // Notify waiting threads, such as the SchedulerSubsystem
     }
 
+    public void setDestinationSensor(boolean hasArrived) {
+        destinationSensor = hasArrived;
+    }
+
+    public boolean getDestinationSensor() {
+        return destinationSensor;
+    }
     // Method for the SchedulerSubsystem to get the current floor
     public synchronized int getCurrentFloor() {
         return this.currentFloor;

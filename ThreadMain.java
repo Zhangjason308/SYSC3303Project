@@ -9,8 +9,7 @@ import SYSC3303Project.Scheduler.SchedulerSubsystem;
  * This class runs the application using the example "ElevatorEvents.csv" as a sample list of commands
  */
 public class ThreadMain {
-    public static void main(String[] args)
-    {
+    public static void main(String[] args) throws InterruptedException {
         Thread floor, elevator, scheduler;
         Synchronizer synchronizer;
 

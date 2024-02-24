@@ -6,8 +6,8 @@ public class CommandSelectedState implements SchedulerState {
     @Override
     public void handleEvent(SchedulerStateMachine context, String event) {
         if ("commandSent".equals(event)) {
-            System.out.println("Scheduler State Change [Command Sent]: CommandSelected -> WaitForSensor");
-            context.setState("WaitForSensor");
+            System.out.println("Scheduler State Change [Command Sent]: CommandSelected -> WaitingForArrivalSensor");
+            context.setState("WaitingForArrivalSensor");
         }
     }
 

@@ -13,7 +13,6 @@ import static SYSC3303Project.DirectionEnum.UP;
 
 public class ElevatorSubsystem implements Runnable {
     private int currentFloor = 1; // Starting floor
-    private DirectionEnum currentDirection = DirectionEnum.UP; // Default direction is UP
     private ElevatorStateMachine elevatorStateMachine;
     private Synchronizer synchronizer;
 
@@ -30,7 +29,7 @@ public class ElevatorSubsystem implements Runnable {
                 if (synchronizer.hasSchedulerCommands()) {
                     FloorData command = synchronizer.getNextSchedulerCommand();
                     if (command != null) {
-                        System.out.println("---------- ELEVATOR SUBSYSTEM: Received Command :" + command + " ----------");
+                        System.out.println("---------- ELEVATOR SUBSYSTEM: Received Command :" + command + " ----------\n");
                         processCommand(command);
                     }
                 }
@@ -44,30 +43,33 @@ public class ElevatorSubsystem implements Runnable {
         }
     }
 
-    private void processCommand(FloorData command) {
-        System.out.println("---------- ELEVATOR SUBSYSTEM: Processing Command :" + command + " ----------");
+    private void processCommand(FloorData command) throws InterruptedException {
+        System.out.println("---------- ELEVATOR SUBSYSTEM: Processing Command :" + command + " ----------\n");
         int destinationFloor = command.getDestinationFloor();
         int arrivalFloor = command.getArrivalFloor();
 
-        // Determine the direction for the current command
-        if (  arrivalFloor > currentFloor) {
-            currentDirection = UP;
+        // Elevator moves to arrival floor to pickup passengers
+        if (arrivalFloor != currentFloor) {
             moveToFloor(arrivalFloor,"boarding");
-        } else if (arrivalFloor < currentFloor) {
-            currentDirection = DOWN;
-            moveToFloor(arrivalFloor,"boarding");
-        } else {
-            elevatorStateMachine.setState("Stopped");
-            System.out.println("---------- ELEVATOR SUBSYSTEM: Already at floor " + currentFloor + " ----------");
-            elevatorStateMachine.setState("DoorsOpen");
-            System.out.println("---------- ELEVATOR SUBSYSTEM: Passengers boarding ----------");
-            elevatorStateMachine.setState("DoorsClosed");
+        }
+        // Elevator is already at arrival floor to pickup passengers
+        else {
+            System.out.println("---------- ELEVATOR SUBSYSTEM: Already at floor " + currentFloor + " ----------\n");
+            elevatorStateMachine.triggerEvent("stop");
+            System.out.println("---------- ELEVATOR SUBSYSTEM: Passengers boarding ----------\n");
+            elevatorStateMachine.triggerEvent("openDoors");
+            System.out.println("---------- ELEVATOR SUBSYSTEM: Doors Closed ----------\n");
+            elevatorStateMachine.triggerEvent("closeDoors");
         }
 
         // Move to the destination floor based on the command
 
         moveToFloor(destinationFloor,"departing");
-        elevatorStateMachine.setState("Idle");
+        synchronized (synchronizer) {
+            synchronizer.setDestinationSensor(true);
+            synchronizer.notifyAll();
+        }
+        elevatorStateMachine.triggerEvent("idle");
     }
 
     private void moveToFloor(int destinationFloor, String action) {
@@ -75,26 +77,27 @@ public class ElevatorSubsystem implements Runnable {
 
         if (currentFloor < destinationFloor) {
             goUp(destinationFloor);
-        } else {
+        } else if (currentFloor > destinationFloor) {
             goDown(destinationFloor);
         }
+        System.out.println("---------- ELEVATOR SUBSYSTEM: Stopping at floor " + currentFloor + " ----------\n");
+        elevatorStateMachine.triggerEvent("stop");
+        System.out.println("---------- ELEVATOR SUBSYSTEM: Passenger " + action + " ----------\n");
+        elevatorStateMachine.triggerEvent("openDoors");
+        System.out.println("---------- ELEVATOR SUBSYSTEM: Doors Closed ----------\n");
+        elevatorStateMachine.triggerEvent("closeDoors");
 
-        System.out.println("---------- ELEVATOR SUBSYSTEM: Stopping at floor " + currentFloor + " ----------");
-        elevatorStateMachine.setState("Stopped");
-        elevatorStateMachine.setState("DoorsOpen");
-        System.out.println("---------- ELEVATOR SUBSYSTEM: Passenger " + action + " ----------");
-        elevatorStateMachine.setState("DoorsClosed");
     }
 
     private void goUp(int destinationFloor) {
+        System.out.println("---------- ELEVATOR SUBSYSTEM: Arrived at floor " + destinationFloor + " ----------\n");
+        elevatorStateMachine.triggerEvent("moveUp");
         currentFloor = destinationFloor;
-        elevatorStateMachine.setState("MovingUp");
-        System.out.println("---------- ELEVATOR SUBSYSTEM: Going up, now at floor " + currentFloor + " ----------\n");
     }
 
     private void goDown(int destinationFloor) {
+        System.out.println("---------- ELEVATOR SUBSYSTEM: Arrived at floor " + destinationFloor + " ----------\n");
+        elevatorStateMachine.triggerEvent("moveDown");
         currentFloor = destinationFloor;
-        elevatorStateMachine.setState("MovingDown");
-        System.out.println("---------- ELEVATOR SUBSYSTEM: Going down, now at floor " + currentFloor + " ----------\n");
     }
 }

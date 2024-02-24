@@ -7,12 +7,13 @@ public class MovingDownState implements ElevatorState {
     @Override
     public void handleEvent(ElevatorStateMachine context, String event) {
         if ("stop".equals(event)) {
-            context.setState("DoorsOpen");
+            System.out.println("Elevator State Change [Arrive at Floor]: MovingDown -> Stopped");
+            context.setState("Stopped");
         }
     }
 
     @Override
     public void displayState() {
-        System.out.println("Elevator State : MovingDown");
+        System.out.println("Elevator State: MovingDown\n");
     }
 }

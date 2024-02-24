@@ -10,18 +10,15 @@ import java.util.Comparator;
 public class SchedulerSubsystem implements Runnable {
     private Synchronizer synchronizer;
     private SchedulerStateMachine stateMachine;
-    private PriorityQueue<FloorData> upQueue; // Queue for requests going up
-    private PriorityQueue<FloorData> downQueue; // Queue for requests going down
 
-    public SchedulerSubsystem(Synchronizer synchronizer) {
+    public SchedulerSubsystem(Synchronizer synchronizer) throws InterruptedException {
         this.synchronizer = synchronizer;
         this.stateMachine = new SchedulerStateMachine(); // Initialize the state machine
-        this.upQueue = new PriorityQueue<>(Comparator.comparingInt(FloorData::getArrivalFloor));
-        this.downQueue = new PriorityQueue<>(Comparator.comparingInt(FloorData::getArrivalFloor).reversed());
     }
 
+
     @Override
-    public void run() {
+    public void run () {
         while (true) {
             try {
                 processRequests();
@@ -34,34 +31,32 @@ public class SchedulerSubsystem implements Runnable {
         }
     }
 
-    private void processRequests() throws InterruptedException {
+    private void processRequests () throws InterruptedException {
         String currentStateName = stateMachine.getCurrentState();
 
         if ("Idle".equals(currentStateName) && synchronizer.hasFloorCommands()) {
-            FloorData command = synchronizer.getNextFloorCommand();
+
             // Add command to the appropriate queue based on its direction
             DirectionEnum Direction = null;
-            if (command.getDirection() == DirectionEnum.UP) {
-                upQueue.add(command);
-            } else {
-                downQueue.add(command);
-            }
+
             stateMachine.triggerEvent("queueNotEmpty");
         } else if ("CommandSelected".equals(currentStateName)) {
-            // Decide which queue to serve based on the elevator's current floor and direction
-            // For simplicity, this example assumes you always serve the upQueue first if not empty
-            if (!upQueue.isEmpty()) {
-                FloorData command = upQueue.poll();
-                dispatchToElevator(command);
-            } else if (!downQueue.isEmpty()) {
-                FloorData command = downQueue.poll();
-                dispatchToElevator(command);
-            }
+            FloorData command = synchronizer.getNextFloorCommand();
+            dispatchToElevator(command);
+
             stateMachine.triggerEvent("commandSent");
             stateMachine.triggerEvent("sensorArrival");
+            synchronized (synchronizer) {
+                while (!synchronizer.getDestinationSensor()) {
+                    synchronizer.wait();
+                }
+                stateMachine.triggerEvent("sensorDestination");
+                synchronizer.setDestinationSensor(false);
+                synchronizer.notifyAll();
+            }
 
             stateMachine.triggerEvent("reset");
-        } else if ("WaitForSensor".equals(currentStateName)) {
+        } else if ("WaitingForArrivalSensor".equals(currentStateName)) {
             int elevatorCurrentFloor = synchronizer.getCurrentFloor();
             System.out.println("SCHEDULER NOTIFIED OF ELEVATOR CURRENT FLOOR: " + elevatorCurrentFloor);
 
@@ -83,7 +78,7 @@ public class SchedulerSubsystem implements Runnable {
 
 
 
-    private void dispatchToElevator(FloorData command) throws InterruptedException {
+    private void dispatchToElevator (FloorData command) throws InterruptedException {
         System.out.println("---------- SCHEDULER SUBSYSTEM: Dispatching Floor Request to Elevator: " + command + " ----------\n");
         synchronizer.addSchedulerCommand(command);
     }
