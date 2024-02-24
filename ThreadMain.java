@@ -13,7 +13,13 @@ public class ThreadMain {
         // Create the client and server threads, passing each thread
         // a reference to the shared synchronizer object.
         synchronizer = new Synchronizer();
+<<<<<<< Updated upstream
       
+=======
+        floor = new Thread(new FloorSubsystem(synchronizer, "SYSC3303Project/ElevatorEvents.csv"),"floor subsystem");
+        elevator = new Thread(new ElevatorSubsystem(synchronizer),"elevator subsystem");
+        scheduler = new Thread(new SchedulerSubsystem(synchronizer),"scheduler subsystem");
+>>>>>>> Stashed changes
 
 
         // start the threads

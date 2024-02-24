@@ -9,6 +9,7 @@ import java.util.ArrayList;
  */
 public class Synchronizer {
 
+<<<<<<< Updated upstream
     private ArrayList<FloorData> elevatorCommands = new ArrayList<>();
     private final int MAX_QUEUE_LENGTH = 4;
     private FloorData selectedCommand;
@@ -18,6 +19,17 @@ public class Synchronizer {
     public int getNumOfCallRetrieveCommand() {return numOfCallRetrieveCommand;}
     public int getNumOfCallProcessElevatorRequest() {return numOfCallProcessElevatorRequest;}
     public int getMAX_QUEUE_LENGTH() {return MAX_QUEUE_LENGTH;}
+=======
+    // Queue for commands from floors to the scheduler
+    private final Queue<FloorData> floorCommandQueue = new LinkedList<>();
+    // View the commands in the List
+    public Queue<FloorData> getFloorCommandQueue() {return floorCommandQueue;}
+
+    // Queue for commands from the scheduler to the elevator
+    private final Queue<FloorData> schedulerCommandQueue = new LinkedList<>();
+    public Queue<FloorData> getSchedulerCommandQueue() {return schedulerCommandQueue;}
+
+>>>>>>> Stashed changes
 
     // Floor sends input to the Synchronizer if the queue is not full
     public synchronized void sendInputLine(FloorData floorData) {
