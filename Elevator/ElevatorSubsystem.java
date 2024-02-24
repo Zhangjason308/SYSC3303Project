@@ -9,7 +9,11 @@ import static SYSC3303Project.DirectionEnum.DOWN;
 import static SYSC3303Project.DirectionEnum.UP;
 
 
-
+/**
+ * ElevatorSubsystem.java
+ * This class represents the Elevator subsystem, which executes commands, based on information it receives from the Scheduler.
+ * The Elevator implements a state machine to keep track of its functions and state.
+ */
 
 public class ElevatorSubsystem implements Runnable {
     private int currentFloor = 1; // Starting floor
@@ -62,22 +66,25 @@ public class ElevatorSubsystem implements Runnable {
             elevatorStateMachine.triggerEvent("closeDoors");
         }
 
-        // Move to the destination floor based on the command
-
+        // Move to the destination floor to deliver the passenger
         moveToFloor(destinationFloor,"departing");
+        // Sets the destination sensor flag to true once the elevator has arrived to the destination floor, and notifies the Scheduler
         synchronized (synchronizer) {
             synchronizer.setDestinationSensor(true);
             synchronizer.notifyAll();
         }
+        // Command is complete, return back to idle state
         elevatorStateMachine.triggerEvent("idle");
     }
 
     private void moveToFloor(int destinationFloor, String action) {
         System.out.println("---------- ELEVATOR SUBSYSTEM: Moving from floor " + currentFloor + " to floor " + destinationFloor + " ----------\n");
-
+        // Move up is destination floor is higher than current floor
         if (currentFloor < destinationFloor) {
             goUp(destinationFloor);
-        } else if (currentFloor > destinationFloor) {
+        }
+        // Move down is destination floor is lower than current floor
+        else if (currentFloor > destinationFloor) {
             goDown(destinationFloor);
         }
         System.out.println("---------- ELEVATOR SUBSYSTEM: Stopping at floor " + currentFloor + " ----------\n");
@@ -90,13 +97,11 @@ public class ElevatorSubsystem implements Runnable {
     }
 
     private void goUp(int destinationFloor) {
-        System.out.println("---------- ELEVATOR SUBSYSTEM: Arrived at floor " + destinationFloor + " ----------\n");
         elevatorStateMachine.triggerEvent("moveUp");
         currentFloor = destinationFloor;
     }
 
     private void goDown(int destinationFloor) {
-        System.out.println("---------- ELEVATOR SUBSYSTEM: Arrived at floor " + destinationFloor + " ----------\n");
         elevatorStateMachine.triggerEvent("moveDown");
         currentFloor = destinationFloor;
     }

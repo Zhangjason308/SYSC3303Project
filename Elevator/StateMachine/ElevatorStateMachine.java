@@ -5,6 +5,9 @@ import SYSC3303Project.Elevator.StateMachine.States.*;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Context class representing the state machine for the ElevatorSubsystem.
+ */
 public class ElevatorStateMachine {
     private Map<String, ElevatorState> states;
     private ElevatorState currentState;

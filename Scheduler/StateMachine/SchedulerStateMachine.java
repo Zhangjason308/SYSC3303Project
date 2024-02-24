@@ -5,6 +5,9 @@ import SYSC3303Project.Scheduler.StateMachine.States.*;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Context class representing the state machine for the Scheduler Subsystem.
+ */
 public class SchedulerStateMachine {
     private Map<String, SchedulerState> states;
     private SchedulerState currentState;

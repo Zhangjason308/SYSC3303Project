@@ -7,6 +7,11 @@ import SYSC3303Project.Synchronizer;
 import java.util.PriorityQueue;
 import java.util.Comparator;
 
+/**
+ * SchedulerSubsystem.java
+ * This class represents the Scheduler subsystem, which receives commands from the Floor Subsystem, and sends commands to the Elevator Subsystem.
+ * The Scheduler implements a state machine to keep track of its functions and state.
+ */
 public class SchedulerSubsystem implements Runnable {
     private Synchronizer synchronizer;
     private SchedulerStateMachine stateMachine;
@@ -33,19 +38,20 @@ public class SchedulerSubsystem implements Runnable {
 
     private void processRequests () throws InterruptedException {
         String currentStateName = stateMachine.getCurrentState();
-
+        //When in idle state and queue is not empty, change state to selected Command
         if ("Idle".equals(currentStateName) && synchronizer.hasFloorCommands()) {
-
-            // Add command to the appropriate queue based on its direction
-            DirectionEnum Direction = null;
-
             stateMachine.triggerEvent("queueNotEmpty");
-        } else if ("CommandSelected".equals(currentStateName)) {
+        }
+        // When in command selected state, selected a command from queue
+        else if ("CommandSelected".equals(currentStateName)) {
             FloorData command = synchronizer.getNextFloorCommand();
+            // Send the command to the elevator
             dispatchToElevator(command);
 
             stateMachine.triggerEvent("commandSent");
+            // Pick up the passenger from the arrival floor
             stateMachine.triggerEvent("sensorArrival");
+            // Wait until the destination sensor is triggered to changed state to command complete
             synchronized (synchronizer) {
                 while (!synchronizer.getDestinationSensor()) {
                     synchronizer.wait();
@@ -54,17 +60,7 @@ public class SchedulerSubsystem implements Runnable {
                 synchronizer.setDestinationSensor(false);
                 synchronizer.notifyAll();
             }
-
-            stateMachine.triggerEvent("reset");
-        } else if ("WaitingForArrivalSensor".equals(currentStateName)) {
-            int elevatorCurrentFloor = synchronizer.getCurrentFloor();
-            System.out.println("SCHEDULER NOTIFIED OF ELEVATOR CURRENT FLOOR: " + elevatorCurrentFloor);
-
-            if (!true) {
-                stateMachine.triggerEvent("sensorArrival");
-
-            }
-        } else if ("CommandComplete".equals(currentStateName)) {
+            // wait for another command from the synchronizer queue
             stateMachine.triggerEvent("reset");
         }
 
@@ -77,7 +73,7 @@ public class SchedulerSubsystem implements Runnable {
     }
 
 
-
+    // Send the Command Request to the Elevator
     private void dispatchToElevator (FloorData command) throws InterruptedException {
         System.out.println("---------- SCHEDULER SUBSYSTEM: Dispatching Floor Request to Elevator: " + command + " ----------\n");
         synchronizer.addSchedulerCommand(command);

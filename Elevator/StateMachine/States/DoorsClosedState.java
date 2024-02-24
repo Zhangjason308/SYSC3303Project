@@ -2,6 +2,9 @@ package SYSC3303Project.Elevator.StateMachine.States;
 
 import SYSC3303Project.Elevator.StateMachine.ElevatorStateMachine;
 
+/**
+ * Concrete state class representing the state when Elevator's doors are closed.
+ */
 public class DoorsClosedState implements ElevatorState {
     @Override
     public void handleEvent(ElevatorStateMachine context, String event) {

@@ -3,6 +3,9 @@ package SYSC3303Project.Elevator.StateMachine.States;
 import SYSC3303Project.Elevator.StateMachine.ElevatorStateMachine;
 import SYSC3303Project.Elevator.StateMachine.States.ElevatorState;
 
+/**
+ * Concrete state class representing the state when Elevator's is not executing any command and is waiting for the scheduler to send a command.
+ */
 public class IdleState implements ElevatorState {
     @Override
     public void handleEvent(ElevatorStateMachine context, String event) {
