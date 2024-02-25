@@ -62,8 +62,11 @@ To import the project into IntelliJ IDEA from VCS:
 - `Synchronizer.java`: Synchronizes communication between various subsystems.
 - `ThreadMain.java`: The main class that launches the system and initializes all subsystems.
 
-## UML Class Diagram Iteration 2 (Zoom in)
+## UML MASTER Class Diagram Iteration 2 (Zoom in)
 ![UML CLASS Diagram](./Documentation/Iteration_2/Master_UML_Class_Diagram.svg)
+
+## UML CORE Class Diagram Iteration 2 
+![UML CLASS Diagram](./Documentation/Iteration_2/Subsystem_StateMachine_UML_Class_Diagrams.png).
 
 ## UML Sequence Diagram Iteration 2
 ![UML SEQUENCE Diagram](./Documentation/Iteration_2/UML_SequenceDiagram_Iteration_2.png)
