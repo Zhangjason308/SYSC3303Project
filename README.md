@@ -39,7 +39,7 @@ To import the project into IntelliJ IDEA from VCS:
   - `FloorSubsystem.java`: Handles floor request inputs and processing.
 
 ## Scheduler
-- **StateMachine**: Manages the state transitions of the scheduler.
+- **StateMachine**: Contains the scheduler state machine related classes.
   - **States**: Defines the possible states of the scheduler and their behavior.
     - `CommandCompleteState.java`: State after a command has been executed.
     - `CommandSelectedState.java`: State when a command is selected.
