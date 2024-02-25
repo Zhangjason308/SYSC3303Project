@@ -21,6 +21,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class U_Test {
 
+    private static final String TEST_FILE_1 = "./Test/Test_1.csv";
+    private static final String TEST_FILE_2 = "./Test/Test_2.csv";
+
     @Test
     @DisplayName("Test the initial floor")
     void InitialFloorTest(){
@@ -32,7 +35,7 @@ class U_Test {
     @DisplayName("Test received empty file")
     void EmptyFileTest(){
         Synchronizer synchronizer = new Synchronizer();
-        FloorSubsystem floorSubsystem = new FloorSubsystem(synchronizer, "SYSC3303Project/Test/Test_1.csv");
+        FloorSubsystem floorSubsystem = new FloorSubsystem(synchronizer, TEST_FILE_1);
         floorSubsystem.run();
         assertTrue(synchronizer.getFloorCommandQueue().size() == 0);
     }
@@ -41,7 +44,7 @@ class U_Test {
     @DisplayName("Test get command from file")
     void GetCommandFromFileTest(){
         Synchronizer synchronizer = new Synchronizer();
-        FloorSubsystem floorSubsystem = new FloorSubsystem(synchronizer, "SYSC3303Project/ElevatorEvents.csv");
+        FloorSubsystem floorSubsystem = new FloorSubsystem(synchronizer, "./ElevatorEvents.csv");
         floorSubsystem.run();
         assertTrue(synchronizer.getFloorCommandQueue().size() == 3);
 
@@ -70,7 +73,7 @@ class U_Test {
         Synchronizer synchronizer = new Synchronizer();
         assertTrue(synchronizer.getCurrentFloor() == 1);
 
-        FloorSubsystem floorSubsystem = new FloorSubsystem(synchronizer, "SYSC3303Project/Test/Test_2.csv");
+        FloorSubsystem floorSubsystem = new FloorSubsystem(synchronizer, TEST_FILE_2);
         SchedulerSubsystem schedulerSubsystem = new SchedulerSubsystem(synchronizer);
         ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem(synchronizer);
 
