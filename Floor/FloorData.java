@@ -40,4 +40,8 @@ public class FloorData {
     public String toString() {
         return "[Time: " + getTime() + ", Arrival Floor: " + getArrivalFloor() + ", Direction: " + getDirection() + ", Destination Floor: " + getDestinationFloor() +"]";
     }
+
+    public static String stringByte(FloorData data) {
+        return data.getTime() + "," + data.getArrivalFloor() + "," + data.getDirection() + "," + data.getDestinationFloor();
+    }
 }

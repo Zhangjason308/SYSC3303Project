@@ -1,10 +1,18 @@
 package SYSC3303Project;
 
 import SYSC3303Project.Floor.FloorData;
+
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.SocketException;
 import java.util.LinkedList;
 import java.util.Queue;
 
 public class Synchronizer {
+
+    DatagramPacket recieveFSPacket, sendESPacket;
+    DatagramSocket recieveFSSocket, sendESSocket;
+
     private int currentFloor = 1; // Default floor before any movement
 
     // Queue for commands from floors to the scheduler
@@ -17,6 +25,28 @@ public class Synchronizer {
     private boolean destinationSensor = false;
 
     // Method to add a command from a floor
+
+    public Synchronizer(){
+        try {
+            // Construct a datagram socket and bind it to any available
+            // port on the local host machine. This socket will be used to
+            // send UDP Datagram packets.
+            sendESSocket = new DatagramSocket();
+
+
+            // Construct a datagram socket and bind it to port 5000
+            // on the local host machine. This socket will be used to
+            // receive UDP Datagram packets.
+            recieveFSSocket = new DatagramSocket(23);
+
+            // to test socket timeout (2 seconds)
+            //receiveSocket.setSoTimeout(2000);
+        } catch (SocketException se) {
+            se.printStackTrace();
+            System.exit(1);
+        }
+    }
+
     public synchronized void addFloorCommand(FloorData command) {
         floorCommandQueue.offer(command);
         notifyAll(); // Notify the scheduler that a new command is available

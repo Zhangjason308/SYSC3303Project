@@ -5,8 +5,9 @@ import SYSC3303Project.Elevator.StateMachine.ElevatorStateMachine;
 import SYSC3303Project.Floor.FloorData;
 import SYSC3303Project.Synchronizer;
 
-import static SYSC3303Project.DirectionEnum.DOWN;
-import static SYSC3303Project.DirectionEnum.UP;
+import java.io.IOException;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
 
 
 /**
@@ -21,11 +22,24 @@ public class ElevatorSubsystem implements Runnable {
     public ElevatorStateMachine getElevatorStateMachine() {return elevatorStateMachine;}
 
     private Synchronizer synchronizer;
+    private DatagramSocket sendSocket,receiveSocket;
+
 
 
     public ElevatorSubsystem(Synchronizer synchronizer) {
         this.synchronizer = synchronizer;
         this.elevatorStateMachine = new ElevatorStateMachine();
+        try {
+            this.sendSocket = new DatagramSocket(100);
+            System.out.println("ElevatorSubsystem SENDING PACKETS ON PORT: " + sendSocket.getLocalPort());
+            this.receiveSocket = new DatagramSocket(101);
+            System.out.println("ElevatorSubsystem RECEIVING PACKETS ON PORT: " + receiveSocket.getLocalPort());
+
+
+        }
+        catch (SocketException se){
+            se.printStackTrace();
+        }
     }
 
     @Override
@@ -34,14 +48,16 @@ public class ElevatorSubsystem implements Runnable {
             try {
                 if (synchronizer.hasSchedulerCommands()) {
                     FloorData command = synchronizer.getNextSchedulerCommand();
+                    FloorData command1 = getFloorData(InetAddress.getLocalHost(),88);
+
                     if (command != null) {
-                        System.out.println("---------- ELEVATOR SUBSYSTEM: Received Command :" + command + " ----------\n");
-                        processCommand(command);
+                        System.out.println("---------- ELEVATOR SUBSYSTEM: Received Command :" + command1 + " ----------\n");
+                        processCommand(command1);
                     }
                 }
 
                 Thread.sleep(100); // Sleep to reduce CPU usage when idle
-            } catch (InterruptedException e) {
+            } catch (InterruptedException | UnknownHostException e) {
                 System.out.println("---------- ELEVATOR SUBSYSTEM INTERRUPTED ---------- ");
                 Thread.currentThread().interrupt();
                 break;
@@ -106,5 +122,65 @@ public class ElevatorSubsystem implements Runnable {
     private void goDown(int destinationFloor) {
         elevatorStateMachine.triggerEvent("moveDown");
         currentFloor = destinationFloor;
+    }
+
+    private void printPacketDetails(String action, DatagramPacket packet, int localPort) {
+        byte[] data = packet.getData();
+        int length = packet.getLength();
+
+        System.out.println(action + " packet:");
+
+        if ("Received".equals(action)) {
+            // For received packets, indicate the packet came from a remote address and was received on the local port
+            System.out.println("From: " + packet.getAddress() + ":" + packet.getPort() + " On PORT: " + localPort);
+        } else if ("Sent".equals(action)) {
+            // For sent packets, indicate the packet is being sent to a remote address from the local port
+            System.out.println("To: " + packet.getAddress() + ":" + packet.getPort() + " From PORT: " + localPort);
+        }
+
+        System.out.println("Length: " + length);
+        System.out.println("Containing (String): " + new String(data, 0, length));
+
+        // Print byte array representation
+        System.out.print("Containing (Bytes): [");
+        for (int i = 0; i < length; i++) {
+            System.out.print(data[i] & 0xFF); // Use & 0xFF to convert to unsigned value for better readability
+            if (i < length - 1) {
+                System.out.print(", ");
+            }
+        }
+        System.out.println("]");
+
+        System.out.println("-----------------------------------------------");
+    }
+
+    private FloorData getFloorData(InetAddress address, int port) {
+        byte[] receiveData = new byte[65535];
+
+        FloorData command1 = null;
+        try { // Receive packet from client
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+            System.out.println("SYSC3303.ElevatorSubsystem: Waiting for Instruction from Scheduler...");
+            receiveSocket.receive(receivePacket);
+            printPacketDetails("Received", receivePacket, receiveSocket.getLocalPort());
+            // Parse the packet
+            String receivedString = new String(receivePacket.getData(), StandardCharsets.UTF_8);
+            String[] parts = receivedString.split(",");
+            String time = parts[0];
+            int arrivalFloor = Integer.parseInt(parts[1]);
+            DirectionEnum direction = DirectionEnum.valueOf(parts[2]);
+            int destinationFloor = Integer.parseInt(parts[3].trim());
+            command1 = new FloorData(time, arrivalFloor, direction, destinationFloor);
+
+            System.out.println(command1.toString());
+
+
+        } catch (IOException e) {
+            System.err.println("IOException in sendFloorData: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+
+        return command1;
     }
 }
