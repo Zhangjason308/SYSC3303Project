@@ -1,11 +1,9 @@
 package SYSC3303Project.Elevator;
 
-import SYSC3303Project.DirectionEnum;
 import SYSC3303Project.Elevator.StateMachine.ElevatorStateMachine;
 import SYSC3303Project.Floor.FloorData;
 import SYSC3303Project.Floor.StringUtil;
 import SYSC3303Project.SharedDataInterface;
-import SYSC3303Project.Synchronizer;
 
 import java.io.IOException;
 import java.net.*;
@@ -23,7 +21,7 @@ import java.rmi.RemoteException;
 public class ElevatorSubsystem implements Runnable {
     private int currentFloor = 1; // Starting floor
 
-    private Direction directionEnum;
+    private Direction direction;
     private ElevatorStateMachine elevatorStateMachine;
 
     DatagramPacket sendPacket, receivePacket;
@@ -35,16 +33,19 @@ public class ElevatorSubsystem implements Runnable {
 
     private FloorData command = null;
 
+    private int id;
 
 
-    public ElevatorSubsystem(SharedDataInterface sharedData) {
+
+    public ElevatorSubsystem(SharedDataInterface sharedData, int id) {
+        this.id = id;
         this.sharedData = sharedData;
         this.elevatorStateMachine = new ElevatorStateMachine();
-        this.directionEnum = Direction.STATIONARY;
+        this.direction = Direction.STATIONARY;
         try {
-            this.sendSocket = new DatagramSocket(10);
+            this.sendSocket = new DatagramSocket(id);
             System.out.println("ElevatorSubsystem SENDING PACKETS ON PORT: " + sendSocket.getLocalPort());
-            this.receiveSocket = new DatagramSocket(11);
+            this.receiveSocket = new DatagramSocket(id + 1);
             System.out.println("ElevatorSubsystem RECEIVING PACKETS ON PORT: " + receiveSocket.getLocalPort());
         }
         catch (SocketException se){
@@ -53,17 +54,21 @@ public class ElevatorSubsystem implements Runnable {
     }
 
     public String getElevatorStatus() {
-        return currentFloor + "," + directionEnum;
+        return  id + "," + currentFloor + "," + direction;
     }
 
-    public void sendAndReceive() throws UnknownHostException {
+    public void sendAndReceive() throws UnknownHostException, InterruptedException {
         int attempt = 0;
         boolean receivedResponse = false;
+        boolean sentStatus = false;
 
-        while (attempt < 20 && !receivedResponse) { // Retry up to 3 times
+        while (attempt < 3 && !receivedResponse) { // Retry up to 3 times
             System.out.println(Thread.currentThread().getName() + ": Attempt " + (attempt + 1));
             // Attempt to send the FloorData packet to the Scheduler
-            rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), 4);
+            if (sentStatus == false) {
+                rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), 4);
+
+            }
             // Attempt to receive the reply from Scheduler
             try {
                 command = rpcReceive(receiveSocket,receivePacket, 20);
@@ -77,30 +82,29 @@ public class ElevatorSubsystem implements Runnable {
 
         if (!receivedResponse) {
             System.out.println(Thread.currentThread().getName() + ": No response after multiple attempts. Exiting.");
-            return;
         }
-
-
+        else {
+            System.out.println("---------- ELEVATOR SUBSYSTEM " + id + ": Received Command :" + command + " ----------\n");
+            processCommand(command);
+            // reply to the Scheduler indicating command processed
+            rpcSend("200", sendSocket, InetAddress.getLocalHost(), 4);
+        }
     }
 
     @Override
     public void run() {
         while (!Thread.currentThread().isInterrupted()) {
             try {
-
+                if (sharedData.getSize() != 0) {
                     sendAndReceive();
-
-                    if (command != null) {
-                        System.out.println("---------- ELEVATOR SUBSYSTEM: Received Command :" + command + " ----------\n");
-                        processCommand(command);
-                    }
-
-
-                Thread.sleep(100); // Sleep to reduce CPU usage when idle
+                    Thread.sleep(100); // Sleep to reduce CPU usage when idle
+                }
             } catch (InterruptedException | UnknownHostException e) {
                 System.out.println("---------- ELEVATOR SUBSYSTEM INTERRUPTED ---------- ");
                 Thread.currentThread().interrupt();
                 break;
+            } catch (RemoteException e) {
+                throw new RuntimeException(e);
             }
         }
     }
@@ -116,7 +120,7 @@ public class ElevatorSubsystem implements Runnable {
             throw new SocketTimeoutException();
         }
         System.out.println("Packet Received From Scheduler: " + StringUtil.getStringFormat(packet));
-        return StringUtil.parseInput(StringUtil.getStringFormat(packet));
+        return StringUtil.parseInputWithComma(StringUtil.getStringFormat(packet));
     }
     private void rpcSend(String command, DatagramSocket socket, InetAddress address, int port) {
         try {
@@ -138,6 +142,7 @@ public class ElevatorSubsystem implements Runnable {
         System.out.println("---------- ELEVATOR SUBSYSTEM: Processing Command :" + command + " ----------\n");
         int destinationFloor = command.getDestinationFloor();
         int arrivalFloor = command.getArrivalFloor();
+        direction = command.getDirection();
 
         // Elevator moves to arrival floor to pickup passengers
         if (arrivalFloor != currentFloor) {
@@ -227,11 +232,22 @@ public class ElevatorSubsystem implements Runnable {
             // Retrieve the shared data interface from the RMI registry
             SharedDataInterface sharedData = (SharedDataInterface) Naming.lookup("rmi://localhost/SharedData");
             // Create Elevator subsystem
-            ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem(sharedData);
+            ElevatorSubsystem elevatorSubsystem10 = new ElevatorSubsystem(sharedData, 10);
+            ElevatorSubsystem elevatorSubsystem12 = new ElevatorSubsystem(sharedData, 12);
+            ElevatorSubsystem elevatorSubsystem14 = new ElevatorSubsystem(sharedData, 14);
+            ElevatorSubsystem elevatorSubsystem16 = new ElevatorSubsystem(sharedData, 16);
             // Create Elevator thread
-            Thread elevatorThread = new Thread(elevatorSubsystem, "Elevator");
+            Thread elevatorThread10 = new Thread(elevatorSubsystem10, "Elevator10");
+            Thread elevatorThread12 = new Thread(elevatorSubsystem12, "Elevator12");
+            Thread elevatorThread14 = new Thread(elevatorSubsystem14, "Elevator14");
+            Thread elevatorThread16 = new Thread(elevatorSubsystem16, "Elevator16");
+
+
             // Start the elevator thread
-            elevatorThread.start();
+            elevatorThread10.start();
+            elevatorThread12.start();
+            elevatorThread14.start();
+            elevatorThread16.start();
         } catch (Exception e) {
             e.printStackTrace();
         }

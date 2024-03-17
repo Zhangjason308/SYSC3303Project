@@ -3,11 +3,17 @@ package SYSC3303Project.Elevator;
         private int currentFloor;
         private Direction direction;
 
-        public ElevatorStatus(int currentFloor, Direction direction) {
+        private int id;
+
+        public ElevatorStatus(int currentFloor, Direction direction, int id) {
             this.currentFloor = currentFloor;
             this.direction = direction;
+            this.id = id;
         }
 
+        public int getId() {
+            return id;
+        }
         // Getters and setters
         public int getCurrentFloor() {
             return currentFloor;
