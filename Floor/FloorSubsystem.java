@@ -1,13 +1,15 @@
 package SYSC3303Project.Floor;
 
 import SYSC3303Project.DirectionEnum;
-import SYSC3303Project.Floor.FloorData;
-import SYSC3303Project.Synchronizer;
+import SYSC3303Project.SharedDataInterface;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import javax.xml.crypto.Data;
+import java.io.*;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.rmi.Naming;
+import java.util.Arrays;
+
 /**
  * FloorSubsystem.java
  * This class is a floor subsystem for an elevator real-time system. This subsystem
@@ -15,25 +17,24 @@ import java.io.IOException;
  * the Elevator movement.
  */
 public class FloorSubsystem implements Runnable {
-    private final Synchronizer synchronizer;
+
+    DatagramPacket sendPacket, receivePacket;
+    private DatagramSocket sendAndReceiveSocket;
     private String fileName;
+    // Shared Interface to store FloorData Commands
+    private SharedDataInterface sharedData;
 
-
-    public FloorSubsystem(Synchronizer synchronizer, String fileName) {
-        this.synchronizer = synchronizer;
+    public FloorSubsystem(SharedDataInterface sharedData, String fileName) throws SocketException {
+        this.sharedData = sharedData;
         this.fileName = fileName;
-    }
-
-    public Synchronizer getSynchronizer() {return synchronizer;}
-    public String getFileName() {return fileName;}
-
-    public FloorData parseInput (String inputLine) {
-        String[] commands = inputLine.split("\\s+");
-        String time = commands[0];
-        int floor = Integer.parseInt(commands[1]);
-        DirectionEnum direction = DirectionEnum.valueOf(commands[2]);
-        int button = Integer.parseInt(commands[3]);
-        return new FloorData(time, floor, direction, button);
+        try {
+            this.sendAndReceiveSocket = new DatagramSocket(1);
+            System.out.println("FloorSubsystem socket is bound to port: " + sendAndReceiveSocket.getLocalPort());
+            sendAndReceiveSocket.setSoTimeout(10000);
+        }
+        catch (SocketException se){
+            se.printStackTrace();
+        }
     }
 
 
@@ -50,12 +51,33 @@ public class FloorSubsystem implements Runnable {
         String line;
 
         try {
-            while (((line = bufferedReader.readLine()) != null)) {
-                FloorData inputLine = parseInput(line);
-                Thread.sleep(200); // next line time - current line time
-                System.out.println("---------- FLOOR SUBSYSTEM: SENT REQUEST: " + inputLine + " ----------\n");
-                synchronizer.addFloorCommand(inputLine);
 
+            while (((line = bufferedReader.readLine()) != null)) {
+                Thread.sleep(2000); // next line time - current line time
+                System.out.println("---------- FLOOR SUBSYSTEM: SENT REQUEST: " + line + " ----------\n");
+
+                int attempt = 0;
+                boolean receivedResponse = false;
+
+                while (attempt < 3 && !receivedResponse) { // Retry up to 3 times
+                    System.out.println(Thread.currentThread().getName() + ": Attempt " + (attempt + 1));
+                    // Attempt to send the FloorData packet to the Scheduler
+                    rpcSend(line, sendAndReceiveSocket, InetAddress.getLocalHost(),3);
+                    // Attempt to receive the reply from Scheduler
+                    try {
+                        rpcReceive(sendAndReceiveSocket, receivePacket, 3);
+                        receivedResponse = true;
+                    }  catch (SocketTimeoutException ste) {
+                        // Handle timeout exception
+                        System.out.println(Thread.currentThread().getName() + ": Timeout. Resending packet.");
+                        attempt++;
+                    }
+                }
+
+                if (!receivedResponse) {
+                    System.out.println(Thread.currentThread().getName() + ": No response after multiple attempts. Exiting.");
+                    return;
+                }
             }
         } catch (IOException | InterruptedException ie) {
             throw new RuntimeException(ie);
@@ -68,4 +90,45 @@ public class FloorSubsystem implements Runnable {
         }
     }
 
+    private void rpcReceive(DatagramSocket socket, DatagramPacket packet, int byteArrSize) throws SocketTimeoutException {
+        byte[] data = new byte[byteArrSize];
+        packet = new DatagramPacket(data, data.length);
+
+        try {
+            socket.receive(packet);
+        } catch (IOException e) {
+            System.out.println(Thread.currentThread().getName() + ": Timeout. Resending packet.");
+            throw new SocketTimeoutException();
+        }
+        System.out.println("Packet Received From Scheduler: " + StringUtil.getStringFormat(packet));
+    }
+    private void rpcSend (String inputLine, DatagramSocket socket, InetAddress address, int port) {
+        try {
+            byte[] floorDataBytes = inputLine.getBytes(StandardCharsets.UTF_8);
+
+            // Create a DatagramPacket with the FloorData bytes
+            DatagramPacket packet = new DatagramPacket(floorDataBytes, floorDataBytes.length, address, port);
+
+            // Send the packet
+            socket.send(packet);
+            System.out.println("Packet Sent To Scheduler: " + StringUtil.getStringFormat(packet));
+        } catch (IOException e) {
+            System.err.println("IOException in sendFloorData: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String args[]) {
+        try {
+            SharedDataInterface sharedData = (SharedDataInterface) Naming.lookup("rmi://localhost/SharedData");
+            FloorSubsystem floorSubsystem = new FloorSubsystem(sharedData, "./ElevatorEvents.csv");
+            Thread floorThread = new Thread(floorSubsystem, "Floor");
+            floorThread.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
 }
+

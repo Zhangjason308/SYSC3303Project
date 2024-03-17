@@ -30,7 +30,7 @@ public class SchedulerStateMachine {
     private void initializeStates() {
         addState("Idle", new IdleState());
         addState("CommandSelected", new CommandSelectedState());
-        addState("WaitingForArrivalSensor", new WaitingForArrivalSensorState());
+        addState("WaitingForArrivalSensor", new IdleState.WaitingForArrivalSensorState());
         addState("WaitingForDestinationSensor", new WaitingForDestinationSensorState());
         addState("CommandComplete", new CommandCompleteState());
     }
