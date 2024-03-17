@@ -29,5 +29,7 @@ public interface SharedDataInterface extends Remote {
      * @throws RemoteException if a communication-related exception occurs during the remote method invocation.
      */
     void addMessage(FloorData message) throws RemoteException;
+
+    int getSize() throws RemoteException;
 }
 

@@ -1,6 +1,7 @@
 package SYSC3303Project.Floor;
 
 import SYSC3303Project.DirectionEnum;
+import SYSC3303Project.Elevator.Direction;
 
 /**
  * FloorData.java
@@ -12,11 +13,11 @@ public class FloorData {
 
     private String time;
     private int arrivalFloor;
-    private DirectionEnum direction;
+    private Direction direction;
     private int destinationFloor;
 
 
-    public FloorData(String time, int arrivalFloor, DirectionEnum direction, int destinationFloor) {
+    public FloorData(String time, int arrivalFloor, Direction direction, int destinationFloor) {
         this.time = time;
         this.arrivalFloor = arrivalFloor;
         this.direction = direction;
@@ -29,7 +30,7 @@ public class FloorData {
     public int getArrivalFloor() {
         return arrivalFloor;
     }
-    public DirectionEnum getDirection() {
+    public Direction getDirection() {
         return direction;
     }
     public int getDestinationFloor() {

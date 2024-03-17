@@ -53,5 +53,10 @@ public class SharedDataImpl extends UnicastRemoteObject implements SharedDataInt
     public synchronized void addMessage(FloorData message) throws RemoteException {
         messages.add(message);
     }
+
+    @Override
+    public int getSize() throws RemoteException {
+        return messages.size();
+    }
 }
 

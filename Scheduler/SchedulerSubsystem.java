@@ -1,6 +1,8 @@
 package SYSC3303Project.Scheduler;
 
 import SYSC3303Project.DirectionEnum;
+import SYSC3303Project.Elevator.Direction;
+import SYSC3303Project.Elevator.ElevatorStatus;
 import SYSC3303Project.Floor.FloorData;
 import SYSC3303Project.Floor.StringUtil;
 import SYSC3303Project.Scheduler.StateMachine.SchedulerStateMachine;
@@ -13,6 +15,7 @@ import java.net.*;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Comparator;
@@ -27,11 +30,13 @@ public class SchedulerSubsystem implements Runnable {
     private SchedulerStateMachine stateMachine;
     public SchedulerStateMachine getStateMachine() {return stateMachine;}
 
+    private ArrayList<ElevatorStatus> elevatorStatusList;
+
     DatagramPacket receiveFSPacket, replyFSPacket, receiveESPacket, sendESPacket;
     DatagramSocket receiveFSSocket, replyFSSocket, receiveESSocket, sendESSocket;
     SharedDataInterface sharedData;
 
-    public SchedulerSubsystem(/** Synchronizer synchronizer, **/SharedDataInterface sharedData) throws InterruptedException {
+    public SchedulerSubsystem(SharedDataInterface sharedData) throws InterruptedException {
         this.sharedData = sharedData;
         this.stateMachine = new SchedulerStateMachine(); // Initialize the state machine
         try {
@@ -46,6 +51,7 @@ public class SchedulerSubsystem implements Runnable {
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
+        this.elevatorStatusList = new ArrayList<>();
     }
 
 
@@ -111,7 +117,6 @@ public class SchedulerSubsystem implements Runnable {
             }
         }
         ///////////////////// RPC Reply to Elevator /////////////////////
-        if(Objects.equals(elevatorRequest, "GET")){
             FloorData command = sharedData.getMessage();
             byte[] ReplyToFloorData = FloorData.stringByte(command).getBytes();
             sendESPacket = new DatagramPacket(ReplyToFloorData, ReplyToFloorData.length, InetAddress.getLocalHost(),6);
@@ -119,7 +124,7 @@ public class SchedulerSubsystem implements Runnable {
             rpc_reply(sendESPacket, sendESSocket, "Floor");
 
             sharedData.getMessage();
-        }
+
 
         ///////////////////// RPC Receive Reply from Elevator /////////////////////
         byte[] ReceiveElevatorReply = new byte[20];
@@ -138,6 +143,7 @@ public class SchedulerSubsystem implements Runnable {
                 attempt3++;
             }
         }
+        command = sharedData.getMessage();
 
         String currentStateName = stateMachine.getCurrentState();
         //When in idle state and queue is not empty, change state to selected Command
@@ -183,7 +189,7 @@ public class SchedulerSubsystem implements Runnable {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        System.out.println("Received Packet From " + receiver + ": " + StringUtil.getStringFormat(packet));
+        System.out.println("Received Packet From " + receiver + ": " + StringUtil.getStringFormat(packet.getData(), packet.getLength()));
         return new String(packet.getData(), 0, packet.getLength());
     }
 
@@ -203,6 +209,24 @@ public class SchedulerSubsystem implements Runnable {
     private void dispatchToElevator (FloorData command) throws InterruptedException {
         System.out.println("---------- SCHEDULER SUBSYSTEM: Dispatching Floor Request to Elevator: " + command + " ----------\n");
         synchronizer.addSchedulerCommand(command);
+    }
+
+    private void chooseElevator(SharedDataInterface sharedData) throws RemoteException {
+        ArrayList<ElevatorStatus> tempElevatorStatusListUp = new ArrayList<>();
+        ArrayList<ElevatorStatus> tempElevatorStatusListDown = new ArrayList<>();
+        for (int i = 0; i < elevatorStatusList.size(); i++){
+            if (sharedData.getMessage().getDirection() == Direction.UP){
+                tempElevatorStatusListUp.add(elevatorStatusList.get(i));
+            }
+            else{
+                tempElevatorStatusListDown.add(elevatorStatusList.get(i));
+            }
+        }
+        //if (tempElevatorStatusList.isEmpty()){
+
+        //}
+
+
     }
 
 
