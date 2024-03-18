@@ -3,8 +3,9 @@ SYSC3303Project - Elevator Control System
 ===============================================================================
 
 DESCRIPTION:
-Iteration_1 of SYSC3303 for Group 8.
-Based off Assignment_1 current iteration models the operation of an elevator, handling floor requests, moving between floors, and scheduling these tasks using the 3 Subsytems outlined in the Project Specification orchestrated by the Java Monitor Synchornizer.java class.
+Iteration_3 of SYSC3303 for Group 8.
+Based off Assignment_1, Assignment_2, and Assignment_3 current iteration models the operation of an elevator, handling floor requests, moving between floors, and scheduling these tasks using the 3 Subsystems outlined in the Project Specification orchestrated by the Java Monitor Synchornizer.java class.
+It also includes 4 elevators, that are scheduled such that the most optimal elevator takes the next request.
 
 INSTALLATION:
 To import the project into IntelliJ IDEA from VCS:
@@ -21,23 +22,48 @@ PROJECT STRUCTURE:
 - FloorData.java: Data model for floor requests.
 - FloorSubsystem.java: Manages floor request inputs.
 - SchedulerSubsystem.java: Schedules elevator movements.
-- Synchronizer.java: Coordinates communications between subsystems.
+- Synchronizer.java: Coordinates communications between subsystems. //Note this class is unused now
 - ThreadMain.java: Entry point, initializes subsystems.
 - ElevatorEvents.csv: Input file for floor subsystem.
 
 SAMPLE OUTPUT:
-Elevator is moving to floor 1 to pickup passenger
-Elevator has arrived at floor 1
-Elevator is moving to floor 4
-Elevator has arrived at floor 4, passengers have been dropped off
-Elevator is moving to floor 2 to pickup passenger
-Elevator has arrived at floor 2
-Elevator is moving to floor 4
-Elevator has arrived at floor 4, passengers have been dropped off
-Elevator is moving to floor 3 to pickup passenger
-Elevator has arrived at floor 3
-Elevator is moving to floor 4
-Elevator has arrived at floor 4, passengers have been dropped off
+
+ELEVATORSUBSYSTEM
+
+Elevator12: Attempt 1
+Packet Sent To Scheduler: 12,4000,UP
+Packet Received From Scheduler: 14:05:15.0,2,UP,4000
+---------- ELEVATOR SUBSYSTEM 12: Received Command :[Time: 14:05:15.0, Arrival Floor: 2, Direction: UP, Destination Floor: 4000] ----------
+
+---------- ELEVATOR SUBSYSTEM: Processing Command :[Time: 14:05:15.0, Arrival Floor: 2, Direction: UP, Destination Floor: 4000] ----------
+
+---------- ELEVATOR SUBSYSTEM: Moving from floor 4000 to floor 2 ----------
+
+Elevator State Change [Processing Destination Request]: DoorsClosed -> MovingDown
+Elevator State: MovingDown
+
+---------- ELEVATOR SUBSYSTEM: Stopping at floor 2 ----------
+
+FLOORSUBSYSTEM
+
+---------- FLOOR SUBSYSTEM: SENT REQUEST: 14:04:15.0 1 UP 4 ----------
+
+Floor: Attempt 1
+Packet Sent To Scheduler: 14:04:15.0 1 UP 4
+Packet Received From Scheduler: 200
+
+SCHEDULERSUBSYSTEM
+Scheduler State: Idle
+
+Waiting to receive from Floor Subsystem.....
+Received Packet From Floor: 14:04:15.0 1 UP 4
+Replying to Floor Subsystem.....
+Packet Sent To Floor: 200
+Waiting to receive from Elevator Subsystem.....
+Received Packet From Elevator: 12,1,STATIONARY
+Received Packet From Elevator: 10,1,STATIONARY
+Received Packet From Elevator: 16,1,STATIONARY
+Received Packet From Elevator: 14,1,STATIONARY
 
 
 TESTING:
@@ -50,22 +76,25 @@ To run the unit tests for the `U_Test` class:
 
 CONTRIBUTIONS:
 Jason Zhang 101191526
-- DirectionEnum.java
-- ElevatorSubsystem.java
-- FloorData.java
+- Elevator.java
 - FloorSubsystem.java
-- SchedulerSubsystem.java
-- Synchronizer.java
+- UML Sequence Diagram
+- StringUtil.java
 
 Caleb Lui-Yee 101187217
-- ThreadMain.java
+- SchedulerSubsystem.Java
+- Elevator Scheduling Algorithm
+- readme.txt
+- Direction.Java
 
 HaoChen Hou 101077553
-- Unit Testing
+- SchedulerSubsystem.Java
+- SharedDataImpl
+- SharedDataInterface
 
 Yahya Khan 101073911
-- UML Class Diagram
-- UML Sequence Diagram
+- FloorSubsystem.Java
+- Sequence Diagram
 - Readme.txt
 
 Bakri Al Rajab 10116420

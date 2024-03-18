@@ -138,7 +138,7 @@ public class ElevatorSubsystem implements Runnable {
     }
 
 
-    private void processCommand(FloorData command) throws InterruptedException {
+    public void processCommand(FloorData command) throws InterruptedException {
         System.out.println("---------- ELEVATOR SUBSYSTEM: Processing Command :" + command + " ----------\n");
         int destinationFloor = command.getDestinationFloor();
         int arrivalFloor = command.getArrivalFloor();
