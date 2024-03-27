@@ -10,7 +10,7 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
-
+import java.util.concurrent.CyclicBarrier;
 
 /**
  * ElevatorSubsystem.java
@@ -19,6 +19,9 @@ import java.rmi.RemoteException;
  */
 
 public class ElevatorSubsystem implements Runnable {
+
+    private CyclicBarrier cyclicBarrier;
+
     private int currentFloor = 1; // Starting floor
 
     private Direction direction;
@@ -62,32 +65,30 @@ public class ElevatorSubsystem implements Runnable {
         boolean receivedResponse = false;
         boolean sentStatus = false;
 
-        while (attempt < 3 && !receivedResponse) { // Retry up to 3 times
-            System.out.println(Thread.currentThread().getName() + ": Attempt " + (attempt + 1));
+        while (attempt < 1 && !receivedResponse) { // Retry up to 3 times
             // Attempt to send the FloorData packet to the Scheduler
             if (sentStatus == false) {
-                rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), 4);
-
+                rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+                sentStatus = true;
             }
             // Attempt to receive the reply from Scheduler
             try {
                 command = rpcReceive(receiveSocket,receivePacket, 20);
                 receivedResponse = true;
             }  catch (SocketTimeoutException ste) {
-                // Handle timeout exception
-                System.out.println(Thread.currentThread().getName() + ": Timeout. Resending packet.");
                 attempt++;
             }
+
         }
 
         if (!receivedResponse) {
-            System.out.println(Thread.currentThread().getName() + ": No response after multiple attempts. Exiting.");
+            System.out.println(Thread.currentThread().getName() + ": No request from Scheduler");
         }
         else {
             System.out.println("---------- ELEVATOR SUBSYSTEM " + id + ": Received Command :" + command + " ----------\n");
             processCommand(command);
             // reply to the Scheduler indicating command processed
-            rpcSend("200", sendSocket, InetAddress.getLocalHost(), 4);
+            rpcSend("200", sendSocket, InetAddress.getLocalHost(), 6);
         }
     }
 
@@ -95,16 +96,11 @@ public class ElevatorSubsystem implements Runnable {
     public void run() {
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                if (sharedData.getSize() != 0) {
-                    sendAndReceive();
-                    Thread.sleep(100); // Sleep to reduce CPU usage when idle
-                }
+                sendAndReceive();
             } catch (InterruptedException | UnknownHostException e) {
                 System.out.println("---------- ELEVATOR SUBSYSTEM INTERRUPTED ---------- ");
                 Thread.currentThread().interrupt();
                 break;
-            } catch (RemoteException e) {
-                throw new RuntimeException(e);
             }
         }
     }
@@ -114,13 +110,13 @@ public class ElevatorSubsystem implements Runnable {
         packet = new DatagramPacket(data, data.length);
 
         try {
+            socket.setSoTimeout(5000);
             socket.receive(packet);
         } catch (IOException e) {
-            System.out.println(Thread.currentThread().getName() + ": Timeout. Resending packet.");
             throw new SocketTimeoutException();
         }
-        System.out.println("Packet Received From Scheduler: " + StringUtil.getStringFormat(packet));
-        return StringUtil.parseInputWithComma(StringUtil.getStringFormat(packet));
+        System.out.println(Thread.currentThread().getName() + ": Packet Received From Scheduler: " + StringUtil.getStringFormat(packet.getData(), packet.getLength()));
+        return StringUtil.parseInputWithComma(StringUtil.getStringFormat(packet.getData(), packet.getLength()));
     }
     private void rpcSend(String command, DatagramSocket socket, InetAddress address, int port) {
         try {
@@ -167,6 +163,7 @@ public class ElevatorSubsystem implements Runnable {
 
         // Command is complete, return back to idle state
         //elevatorStateMachine.triggerEvent("idle");
+        this.currentFloor = destinationFloor;
     }
 
     private void moveToFloor(int destinationFloor, String action) {

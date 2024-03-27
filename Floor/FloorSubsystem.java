@@ -53,16 +53,20 @@ public class FloorSubsystem implements Runnable {
         try {
 
             while (((line = bufferedReader.readLine()) != null)) {
-                Thread.sleep(2000); // next line time - current line time
+                Thread.sleep(5000); // next line time - current line time
                 System.out.println("---------- FLOOR SUBSYSTEM: SENT REQUEST: " + line + " ----------\n");
 
-                int attempt = 0;
+                //int attempt = 0;
                 boolean receivedResponse = false;
+                boolean sentRequest = false;
 
-                while (attempt < 3 && !receivedResponse) { // Retry up to 3 times
-                    System.out.println(Thread.currentThread().getName() + ": Attempt " + (attempt + 1));
+                while (!receivedResponse) { // Retry up to 3 times
+                    //System.out.println(Thread.currentThread().getName() + ": Attempt " + (attempt + 1));
                     // Attempt to send the FloorData packet to the Scheduler
-                    rpcSend(line, sendAndReceiveSocket, InetAddress.getLocalHost(),3);
+                    if (!sentRequest) {
+                        rpcSend(line, sendAndReceiveSocket, InetAddress.getLocalHost(),3);
+                        sentRequest = true;
+                    }
                     // Attempt to receive the reply from Scheduler
                     try {
                         rpcReceive(sendAndReceiveSocket, receivePacket, 3);
@@ -70,7 +74,7 @@ public class FloorSubsystem implements Runnable {
                     }  catch (SocketTimeoutException ste) {
                         // Handle timeout exception
                         System.out.println(Thread.currentThread().getName() + ": Timeout. Resending packet.");
-                        attempt++;
+                        //attempt++;
                     }
                 }
 
