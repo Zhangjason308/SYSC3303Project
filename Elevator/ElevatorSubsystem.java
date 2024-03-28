@@ -54,54 +54,33 @@ public class ElevatorSubsystem implements Runnable {
         catch (SocketException se){
             se.printStackTrace();
         }
+        sendStatusUpdate();
     }
 
     public String getElevatorStatus() {
         return  id + "," + currentFloor + "," + direction;
     }
-
-    public void sendAndReceive() throws UnknownHostException, InterruptedException {
-        int attempt = 0;
-        boolean receivedResponse = false;
-        boolean sentStatus = false;
-
-        while (attempt < 1 && !receivedResponse) { // Retry up to 3 times
-            // Attempt to send the FloorData packet to the Scheduler
-            if (sentStatus == false) {
-                rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
-                sentStatus = true;
-            }
-            // Attempt to receive the reply from Scheduler
+    public void sendAndReceive() {
+        // Then, focus on listening for and processing commands from the Scheduler
+        while (!Thread.currentThread().isInterrupted()) {
             try {
-                command = rpcReceive(receiveSocket,receivePacket, 20);
-                receivedResponse = true;
-            }  catch (SocketTimeoutException ste) {
-                attempt++;
+                command = rpcReceive(receiveSocket, receivePacket, 20); // Update the packet size as needed
+                System.out.println("---------- ELEVATOR SUBSYSTEM " + id + ": Received Command :" + command + " ----------\n");
+                processCommand(command);
+                // reply to the Scheduler indicating command processed
+                rpcSend("200", sendSocket, InetAddress.getLocalHost(), 6);
+            } catch (SocketTimeoutException ste) {
+                // Handle timeout or no command received - Elevator could be idle or keep moving based on last command
+            } catch (UnknownHostException | InterruptedException e) {
+                throw new RuntimeException(e);
             }
-
-        }
-
-        if (!receivedResponse) {
-            System.out.println(Thread.currentThread().getName() + ": No request from Scheduler");
-        }
-        else {
-            System.out.println("---------- ELEVATOR SUBSYSTEM " + id + ": Received Command :" + command + " ----------\n");
-            processCommand(command);
-            // reply to the Scheduler indicating command processed
-            rpcSend("200", sendSocket, InetAddress.getLocalHost(), 6);
         }
     }
 
     @Override
     public void run() {
         while (!Thread.currentThread().isInterrupted()) {
-            try {
-                sendAndReceive();
-            } catch (InterruptedException | UnknownHostException e) {
-                System.out.println("---------- ELEVATOR SUBSYSTEM INTERRUPTED ---------- ");
-                Thread.currentThread().interrupt();
-                break;
-            }
+            sendAndReceive();
         }
     }
 
@@ -187,13 +166,49 @@ public class ElevatorSubsystem implements Runnable {
 
     private void goUp(int destinationFloor) {
         elevatorStateMachine.triggerEvent("moveUp");
-        currentFloor = destinationFloor;
+        while (currentFloor < destinationFloor) {
+            try {
+                Thread.sleep((ElevatorTiming.getTravelTime(destinationFloor-currentFloor))/(destinationFloor-currentFloor)); // Simulate the time it takes to move up one floor
+                currentFloor++;
+                System.out.println("Elevator " + id + " is now at floor " + currentFloor);
+
+                // Send status update to Scheduler
+                sendStatusUpdate();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
     }
+
 
     private void goDown(int destinationFloor) {
         elevatorStateMachine.triggerEvent("moveDown");
-        currentFloor = destinationFloor;
+        while (currentFloor > destinationFloor) {
+            try {
+                Thread.sleep((ElevatorTiming.getTravelTime(destinationFloor-currentFloor))/(destinationFloor-currentFloor)); // Simulate the time it takes to move up one floor
+                currentFloor--;
+                System.out.println("Elevator " + id + " is now at floor " + currentFloor);
+
+                // Send status update to Scheduler
+                sendStatusUpdate();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
     }
+
+    private void sendStatusUpdate() {
+        String status = getElevatorStatus();
+        try {
+            // Assuming the Scheduler listens for status updates on a specific port
+            rpcSend(status, sendSocket, InetAddress.getLocalHost(), id+10);
+        } catch (UnknownHostException e) {
+            System.err.println("Unknown Host Exception: " + e.getMessage());
+        }
+    }
+
 
     private FloorData getFloorData(InetAddress address, int port) {
         byte[] receiveData = new byte[65535];

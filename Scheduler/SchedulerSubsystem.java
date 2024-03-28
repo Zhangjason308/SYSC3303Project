@@ -7,6 +7,7 @@ import SYSC3303Project.Floor.StringUtil;
 import SYSC3303Project.Scheduler.StateMachine.SchedulerStateMachine;
 import SYSC3303Project.SharedDataImpl;
 import SYSC3303Project.SharedDataInterface;
+import SYSC3303Project.SimulatedClockSingleton;
 import SYSC3303Project.Synchronizer;
 
 import java.io.IOException;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 
 import java.util.Collections;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * SchedulerSubsystem.java
@@ -25,6 +27,7 @@ import java.util.Collections;
  * The Scheduler implements a state machine to keep track of its functions and state.
  */
 public class SchedulerSubsystem implements Runnable {
+
     private Synchronizer synchronizer;
     private SchedulerStateMachine stateMachine;
     public SchedulerStateMachine getStateMachine() {return stateMachine;}
@@ -34,11 +37,15 @@ public class SchedulerSubsystem implements Runnable {
 
     private int elevatorNumber;
     DatagramPacket receiveFSPacket, replyFSPacket, receiveESPacket, sendESPacket, receiveES1StatusPacket, receiveES2StatusPacket, receiveES3StatusPacket, receiveES4StatusPacket;
-    DatagramSocket receiveFSSocket, replyFSSocket, receiveElevatorStatusSocket, sendESSocket, receiveESResponseSocket, receiveElevatorStatusSocket1, receiveElevatorStatusSocket2, receiveElevatorStatusSocket3, receiveElevatorStatusSocket4;
+    DatagramSocket receiveFSSocket, replyFSSocket, sendESSocket, receiveESResponseSocket, receiveElevatorStatusSocket1, receiveElevatorStatusSocket2, receiveElevatorStatusSocket3, receiveElevatorStatusSocket4;
     SharedDataInterface sharedData;
+    private ConcurrentLinkedQueue<FloorData> floorDataQueue = new ConcurrentLinkedQueue<>();
+
     FloorData command;
 
     public SchedulerSubsystem(SharedDataInterface sharedData) throws InterruptedException {
+        SimulatedClockSingleton clock = SimulatedClockSingleton.getInstance();
+        clock.printCurrentTime();
         this.sharedData = sharedData;
         this.stateMachine = new SchedulerStateMachine(); // Initialize the state machine
         try {
@@ -71,8 +78,10 @@ public class SchedulerSubsystem implements Runnable {
 
     @Override
     public void run () {
+        new Thread(this::listenForFloorData).start();
         while (true) {
             try {
+                SimulatedClockSingleton.getInstance().printCurrentTime();
                 processRequests();
                 Thread.sleep(100); // Adjust the sleep time as necessary
             } catch (Exception e) {
@@ -83,11 +92,8 @@ public class SchedulerSubsystem implements Runnable {
         }
     }
 
-
-    private void processRequests() throws Exception, InterruptedException {
-
-
-
+    private FloorData receiveFloorData() throws RemoteException, UnknownHostException {
+        FloorData floorData = null;
         /////////////////////RPC Recieve from Floor/////////////////////
         if (sharedData.getSize() < 2) {
             byte[] ReceiveFloorData = new byte[20];
@@ -97,7 +103,7 @@ public class SchedulerSubsystem implements Runnable {
             boolean receivedResponse = false;
             while (attempt < 1 && !receivedResponse) {
                 try {
-                    FloorData floorData = StringUtil.parseInput(rpc_Receive(receiveFSPacket, receiveFSSocket, "Floor"));
+                    floorData = StringUtil.parseInput(rpc_Receive(receiveFSPacket, receiveFSSocket, "Floor", "Floor Command"));
                     receivedResponse = true;
                     sharedData.addMessage(floorData);
                 } catch (RuntimeException e) {
@@ -107,14 +113,33 @@ public class SchedulerSubsystem implements Runnable {
                 }
             }
 
-
             ///////////////////// RPC Reply to Floor /////////////////////
             byte[] ReplyData = "200".getBytes();
             replyFSPacket = new DatagramPacket(ReplyData, ReplyData.length, InetAddress.getLocalHost(), 1);
             System.out.println("Replying to Floor Subsystem.....");
             rpc_reply(replyFSPacket, replyFSSocket, "Floor");
         }
+        return floorData;
+    }
 
+    private void listenForFloorData() {
+        // Pseudo-code for listening for incoming floor data and adding to the queue
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                // Simulate receiving a FloorData object (replace with actual receiving logic)
+                FloorData floorData = receiveFloorData();
+                if (floorData != null) {
+                    floorDataQueue.offer(floorData);
+                }
+            } catch (Exception e) {
+                System.out.println("Error receiving floor data: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    private void processRequests() throws Exception, InterruptedException {
 
         ///////////////////// RPC Receive from Elevator Subsystem /////////////////////
         byte[] ReceiveElevatorRequest = new byte[20];
@@ -132,10 +157,10 @@ public class SchedulerSubsystem implements Runnable {
         String elevatorRequest4 = null;
         while(attempt2 < 2 && !receivedResponse2) {
             try {
-                elevatorRequest1 = rpc_Receive(receiveES1StatusPacket, receiveElevatorStatusSocket1, "Elevator 10");
-                elevatorRequest2 = rpc_Receive(receiveES2StatusPacket, receiveElevatorStatusSocket2, "Elevator 12");
-                elevatorRequest3 = rpc_Receive(receiveES3StatusPacket, receiveElevatorStatusSocket3, "Elevator 14");
-                elevatorRequest4 = rpc_Receive(receiveES4StatusPacket, receiveElevatorStatusSocket4, "Elevator 16");
+                elevatorRequest1 = rpc_Receive(receiveES1StatusPacket, receiveElevatorStatusSocket1, "Elevator 10", "Elevator Status");
+                elevatorRequest2 = rpc_Receive(receiveES2StatusPacket, receiveElevatorStatusSocket2, "Elevator 12", "Elevator Status");
+                elevatorRequest3 = rpc_Receive(receiveES3StatusPacket, receiveElevatorStatusSocket3, "Elevator 14", "Elevator Status");
+                elevatorRequest4 = rpc_Receive(receiveES4StatusPacket, receiveElevatorStatusSocket4, "Elevator 16", "Elevator Status");
                 addElevatorStatus(elevatorRequest1);
                 addElevatorStatus(elevatorRequest2);
                 addElevatorStatus(elevatorRequest3);
@@ -181,7 +206,7 @@ public class SchedulerSubsystem implements Runnable {
         boolean receivedReply = false;
         while(attempt3 < 3 && !receivedReply) {
             try {
-                String elevatorReply = rpc_Receive(receiveESPacket, receiveESResponseSocket, "Elevator " + elevatorId);
+                String elevatorReply = rpc_Receive(receiveESPacket, receiveESResponseSocket, "Elevator " + elevatorId, "Reply");
                 receivedReply = true;
             } catch (RuntimeException e) {
                 // Handle timeout exception
@@ -194,10 +219,10 @@ public class SchedulerSubsystem implements Runnable {
         receivedResponse2 = false;
         while(attempt2 < 2 && !receivedResponse2) {
             try {
-                elevatorRequest1 = rpc_Receive(receiveES1StatusPacket, receiveElevatorStatusSocket1, "Elevator 10");
-                elevatorRequest2 = rpc_Receive(receiveES2StatusPacket, receiveElevatorStatusSocket2, "Elevator 12");
-                elevatorRequest3 = rpc_Receive(receiveES3StatusPacket, receiveElevatorStatusSocket3, "Elevator 14");
-                elevatorRequest4 = rpc_Receive(receiveES4StatusPacket, receiveElevatorStatusSocket4, "Elevator 16");
+                elevatorRequest1 = rpc_Receive(receiveES1StatusPacket, receiveElevatorStatusSocket1, "Elevator 10", "Elevator Status");
+                elevatorRequest2 = rpc_Receive(receiveES2StatusPacket, receiveElevatorStatusSocket2, "Elevator 12", "Elevator Status");
+                elevatorRequest3 = rpc_Receive(receiveES3StatusPacket, receiveElevatorStatusSocket3, "Elevator 14", "Elevator Status");
+                elevatorRequest4 = rpc_Receive(receiveES4StatusPacket, receiveElevatorStatusSocket4, "Elevator 16", "Elevator Status");
                 addElevatorStatus(elevatorRequest1);
                 addElevatorStatus(elevatorRequest2);
                 addElevatorStatus(elevatorRequest3);
@@ -255,7 +280,7 @@ public class SchedulerSubsystem implements Runnable {
     }
 
 
-    public String rpc_Receive(DatagramPacket packet, DatagramSocket socket, String receiver) {
+    public String rpc_Receive(DatagramPacket packet, DatagramSocket socket, String receiver, String packetType) {
         try {
             socket.receive(packet);
         } catch (SocketTimeoutException ste){
@@ -263,7 +288,7 @@ public class SchedulerSubsystem implements Runnable {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        System.out.println("Received Packet From " + receiver + ": " + StringUtil.getStringFormat(packet.getData(), packet.getLength()));
+        System.out.println("Received " + packetType + " Packet From " + receiver + ": " + StringUtil.getStringFormat(packet.getData(), packet.getLength()));
         return StringUtil.getStringFormat(packet.getData(), packet.getLength());
     }
 
