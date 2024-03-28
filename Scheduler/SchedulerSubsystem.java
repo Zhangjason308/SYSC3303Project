@@ -1,9 +1,7 @@
 package SYSC3303Project.Scheduler;
 
-import SYSC3303Project.DirectionEnum;
 import SYSC3303Project.Elevator.Direction;
 import SYSC3303Project.Elevator.ElevatorStatus;
-import SYSC3303Project.Elevator.ElevatorStatusReceiver;
 import SYSC3303Project.Floor.FloorData;
 import SYSC3303Project.Floor.StringUtil;
 import SYSC3303Project.Scheduler.StateMachine.SchedulerStateMachine;
@@ -17,12 +15,9 @@ import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.util.ArrayList;
-import java.util.Objects;
-import java.util.PriorityQueue;
 import java.util.Comparator;
 
 import java.util.Collections;
-import java.util.Comparator;
 
 /**
  * SchedulerSubsystem.java
@@ -35,7 +30,9 @@ public class SchedulerSubsystem implements Runnable {
     public SchedulerStateMachine getStateMachine() {return stateMachine;}
 
     private ArrayList<ElevatorStatus> elevatorStatusList;
+    private FloorData sameElevator;
 
+    private int elevatorNumber;
     DatagramPacket receiveFSPacket, replyFSPacket, receiveESPacket, sendESPacket, receiveES1StatusPacket, receiveES2StatusPacket, receiveES3StatusPacket, receiveES4StatusPacket;
     DatagramSocket receiveFSSocket, replyFSSocket, receiveElevatorStatusSocket, sendESSocket, receiveESResponseSocket, receiveElevatorStatusSocket1, receiveElevatorStatusSocket2, receiveElevatorStatusSocket3, receiveElevatorStatusSocket4;
     SharedDataInterface sharedData;
@@ -60,6 +57,7 @@ public class SchedulerSubsystem implements Runnable {
             throw new RuntimeException(e);
         }
         this.elevatorStatusList = new ArrayList<>();
+        this.elevatorNumber = 0;
     }
 
     public void addElevatorStatus(String statusString) {
@@ -91,28 +89,31 @@ public class SchedulerSubsystem implements Runnable {
 
 
         /////////////////////RPC Recieve from Floor/////////////////////
-        byte[] ReceiveFloorData = new byte[20];
-        receiveFSPacket = new DatagramPacket(ReceiveFloorData, ReceiveFloorData.length);
-        System.out.println("Waiting to receive from Floor Subsystem.....");
-        int attempt = 0;
-        boolean receivedResponse = false;
-        while(attempt < 1 && !receivedResponse) {
-            try {
-                FloorData floorData = StringUtil.parseInput(rpc_Receive(receiveFSPacket, receiveFSSocket, "Floor"));
-                receivedResponse = true;
-                sharedData.addMessage(floorData);
-            } catch (RuntimeException e) {
-                // Handle timeout exception
-                System.out.println(Thread.currentThread().getName() + ": Timeout. Resending packet.");
-                attempt++;
+        if (sharedData.getSize() < 2) {
+            byte[] ReceiveFloorData = new byte[20];
+            receiveFSPacket = new DatagramPacket(ReceiveFloorData, ReceiveFloorData.length);
+            System.out.println("Waiting to receive from Floor Subsystem.....");
+            int attempt = 0;
+            boolean receivedResponse = false;
+            while (attempt < 1 && !receivedResponse) {
+                try {
+                    FloorData floorData = StringUtil.parseInput(rpc_Receive(receiveFSPacket, receiveFSSocket, "Floor"));
+                    receivedResponse = true;
+                    sharedData.addMessage(floorData);
+                } catch (RuntimeException e) {
+                    // Handle timeout exception
+                    System.out.println(Thread.currentThread().getName() + ": Timeout. Resending packet.");
+                    attempt++;
+                }
             }
-        }
 
-        ///////////////////// RPC Reply to Floor /////////////////////
-        byte[] ReplyData = "200".getBytes();
-        replyFSPacket = new DatagramPacket(ReplyData, ReplyData.length, InetAddress.getLocalHost(),1);
-        System.out.println("Replying to Floor Subsystem.....");
-        rpc_reply(replyFSPacket, replyFSSocket, "Floor");
+
+            ///////////////////// RPC Reply to Floor /////////////////////
+            byte[] ReplyData = "200".getBytes();
+            replyFSPacket = new DatagramPacket(ReplyData, ReplyData.length, InetAddress.getLocalHost(), 1);
+            System.out.println("Replying to Floor Subsystem.....");
+            rpc_reply(replyFSPacket, replyFSSocket, "Floor");
+        }
 
 
         ///////////////////// RPC Receive from Elevator Subsystem /////////////////////
@@ -147,8 +148,25 @@ public class SchedulerSubsystem implements Runnable {
         }
 
         ///////////////////// RPC Reply to Elevator /////////////////////
-        command = sharedData.getMessage();
-        int elevatorId = chooseElevator(command);
+        ArrayList<FloorData> floordataArray = chooseFloorData();
+        int elevatorId;
+        if(elevatorNumber != 0){
+            command = sameElevator;
+            elevatorId = elevatorNumber;
+            elevatorNumber = 0;
+        }
+        else if(floordataArray.size() == 1){
+            command = floordataArray.get(0);
+            elevatorId = chooseElevator(command);
+        }
+        else {
+            command = floordataArray.get(0);
+            elevatorId = chooseElevator(command);
+            sameElevator = floordataArray.get(1);
+            elevatorNumber = elevatorId;
+        }
+        floordataArray = new ArrayList<>();
+
         byte[] ReplyToFloorData = FloorData.stringByte(command).getBytes();
         sendESPacket = new DatagramPacket(ReplyToFloorData, ReplyToFloorData.length, InetAddress.getLocalHost(), elevatorId+1);
         System.out.println("Replying to Elevator Subsystem.....");
@@ -279,18 +297,49 @@ public class SchedulerSubsystem implements Runnable {
             }
         }
         if (!tempElevatorStatusListSequencial.isEmpty()){
-            sorted = sorter(tempElevatorStatusListSequencial, command);
+            sorted = sorterElevator(tempElevatorStatusListSequencial, command);
         }
         else{
-            sorted = sorter(elevatorStatusList, command);
+            sorted = sorterElevator(elevatorStatusList, command);
         }
         elevatorStatusList = new ArrayList<>();
         return sorted.get(0).getId();
 
-
     }
 
-    private ArrayList<ElevatorStatus> sorter(ArrayList<ElevatorStatus> elevatorStatus, FloorData command){
+    private ArrayList<FloorData> chooseFloorData() throws RemoteException {
+        ArrayList<FloorData> tempFloorData = new ArrayList<>();
+        tempFloorData.add(sharedData.getMessage());
+        if (sharedData.getSize() > 1){
+            tempFloorData.add(sharedData.getMessage());
+            tempFloorData = sorterFloorData(tempFloorData);
+
+            if((tempFloorData.get(0).getDirection() == tempFloorData.get(1).getDirection())) {
+                if (((tempFloorData.get(0).getDirection() == Direction.UP && tempFloorData.get(0).getDestinationFloor() <= tempFloorData.get(1).getArrivalFloor()) || (tempFloorData.get(0).getDirection() == Direction.DOWN && tempFloorData.get(0).getDestinationFloor() >= tempFloorData.get(1).getArrivalFloor()))) {
+                    return tempFloorData;
+                }
+            }
+            sharedData.addMessage(tempFloorData.get(1));
+            tempFloorData.remove(1);
+        }
+        return tempFloorData;
+    }
+
+    private ArrayList<FloorData> sorterFloorData(ArrayList<FloorData> floorData){
+        ArrayList<FloorData> tempArray = floorData;
+
+        Collections.sort(tempArray, new Comparator<FloorData>() {
+            @Override
+            public int compare(FloorData fd1, FloorData fd2) {
+
+                return Integer.compare(Integer.parseInt(fd1.getTime()), Integer.parseInt(fd2.getTime()));
+            }
+        });
+
+        return tempArray;
+    }
+
+    private ArrayList<ElevatorStatus> sorterElevator(ArrayList<ElevatorStatus> elevatorStatus, FloorData command){
         ArrayList<ElevatorStatus> tempArray = elevatorStatus;
 
         Collections.sort(tempArray, new Comparator<ElevatorStatus>() {
