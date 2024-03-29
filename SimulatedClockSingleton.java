@@ -3,7 +3,7 @@ package SYSC3303Project;
 public class SimulatedClockSingleton {
     private static SimulatedClockSingleton instance;
     private long currentTime = 0;
-    private final long tickInterval = 100; // Example: 1 ms
+    private final long tickInterval = 1000; // Example: 1 ms
     private boolean running = true;
 
     private SimulatedClockSingleton() {}

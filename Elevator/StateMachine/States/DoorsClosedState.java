@@ -8,13 +8,12 @@ import SYSC3303Project.Elevator.StateMachine.ElevatorStateMachine;
 public class DoorsClosedState implements ElevatorState {
     @Override
     public void handleEvent(ElevatorStateMachine context, String event) {
-        if ("moveUp".equals(event)) {
-            System.out.println("Elevator State Change [Processing Destination Request]: DoorsClosed -> MovingUp");
-            context.setState("MovingUp");
-        } else if ("moveDown".equals(event)) {
-            System.out.println("Elevator State Change [Processing Destination Request]: DoorsClosed -> MovingDown");
-            context.setState("MovingDown");
-        } else {
+        // If elevator is moving
+        if ("accelerating".equals(event)) {
+            System.out.println("Elevator State Change [Accelerating]: DoorsClosed -> Accelerating");
+            context.setState("Accelerating");
+        }
+        else {
             System.out.println("Elevator State Change [Signaling Scheduler for New Request]: DoorsClosed -> Idle");
             context.setState("Idle");
         }

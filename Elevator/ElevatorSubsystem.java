@@ -203,13 +203,14 @@ public class ElevatorSubsystem implements Runnable {
 
     private void moveToFloor(int destinationFloor, String action) throws UnknownHostException {
         System.out.println("---------- ELEVATOR [" + id + "]: Moving from floor " + currentFloor + " to floor " + destinationFloor + " ----------\n");
+        elevatorStateMachine.triggerEvent("accelerating");
         // Move up is destination floor is higher than current floor
         if (currentFloor < destinationFloor) {
-            goUp(destinationFloor);
+            goUp(destinationFloor, destinationFloor - currentFloor);
         }
         // Move down is destination floor is lower than current floor
         else if (currentFloor > destinationFloor) {
-            goDown(destinationFloor);
+            goDown(destinationFloor, currentFloor - destinationFloor);
         }
         System.out.println("---------- ELEVATOR [" + id + "]: Stopping at floor " + currentFloor + " ----------\n");
         elevatorStateMachine.triggerEvent("stop");
@@ -233,17 +234,40 @@ public class ElevatorSubsystem implements Runnable {
 
         while (currentFloor < destinationFloor) {
             long startTime = System.currentTimeMillis();
-
-            elevatorStateMachine.triggerEvent("moveUp");
+            long timeTracker = System.currentTimeMillis();
             this.direction = Direction.UP;
+//            while (System.currentTimeMillis() < startTime + timePerFloor/2){
+//
+//            }
             currentFloor++;
+
+
+
+//            while (System.currentTimeMillis() < startTime + timePerFloor * (travelDistance - 1)){
+//                if(System.currentTimeMillis() + timePerFloor <= timeTracker - 500 || System.currentTimeMillis() + timePerFloor > timeTracker + 500){
+//                    currentFloor++;
+//                    timeTracker = System.currentTimeMillis();
+//                }
+//            }
+
+
+//            while (System.currentTimeMillis() < startTime + timePerFloor/2){
+//                if(System.currentTimeMillis() + timePerFloor <= timeTracker - 500 || System.currentTimeMillis() + timePerFloor > timeTracker + 500){
+//                    currentFloor++;
+//                    timeTracker = System.currentTimeMillis();
+//                }
+//            }
+
+
 
             // Check if the current floor is a target floor
             Iterator<AbstractMap.SimpleEntry<Integer, Integer>> iterator = targetFloors.iterator();
             while (iterator.hasNext()) {
                 AbstractMap.SimpleEntry<Integer, Integer> floorPair = iterator.next();
-                if (floorPair.getKey() == currentFloor) { // If arrival floor is a target
+                elevatorStateMachine.triggerEvent("cruise");
+                if (floorPair.getValue() == currentFloor) { // If arrival floor is a target
                     // Simulate stopping at this floor
+                    elevatorStateMachine.triggerEvent("decelerate");
                     stopAtFloor(floorPair);
                     iterator.remove(); // Remove from target floors after stopping
                 }
@@ -260,19 +284,7 @@ public class ElevatorSubsystem implements Runnable {
         }
     }
 
-    private void stopAtFloor(AbstractMap.SimpleEntry<Integer, Integer> floorPair) throws UnknownHostException {
-        System.out.println("ELEVATOR [" + id + "]: Stopping at floor " + floorPair.getKey());
-        // Simulate actions taken at a stop, e.g., opening doors, waiting, then closing doors
-        elevatorStateMachine.triggerEvent("openDoors");
-        // Assume there's a brief delay to simulate doors open, passengers boarding/alighting
-        try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-        elevatorStateMachine.triggerEvent("closeDoors");
-        rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id + 10);
-    }
-
-
-
-    private void goDown(int destinationFloor) throws UnknownHostException {
+    private void goDown(int destinationFloor, int travelDistance) throws UnknownHostException {
         final double floorHeight = 3.912; // height of one floor in meters
         final double speed = 0.2784; // elevator speed in meters per second
         final long timePerFloor = (long) (floorHeight / speed * 1000); // time per floor in milliseconds
@@ -302,6 +314,16 @@ public class ElevatorSubsystem implements Runnable {
             }
             System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
         }
+    }
+
+    private void stopAtFloor(AbstractMap.SimpleEntry<Integer, Integer> floorPair) throws UnknownHostException {
+        System.out.println("ELEVATOR [" + id + "]: Stopping at floor " + floorPair.getKey());
+        // Simulate actions taken at a stop, e.g., opening doors, waiting, then closing doors
+        elevatorStateMachine.triggerEvent("openDoors");
+        // Assume there's a brief delay to simulate doors open, passengers boarding/alighting
+        try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        elevatorStateMachine.triggerEvent("closeDoors");
+        rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id + 10);
     }
 
 

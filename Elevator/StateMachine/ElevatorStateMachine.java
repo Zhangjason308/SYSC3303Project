@@ -30,8 +30,9 @@ public class ElevatorStateMachine {
 
     private void initializeStates() {
         addState("Idle", new IdleState());
-        addState("MovingUp", new MovingUpState());
-        addState("MovingDown", new MovingDownState());
+        addState("Accelerating", new AcceleratingState());
+        addState("Cruising", new CruisingState());
+        addState("Decelerating", new DeceleratingState());
         addState("DoorsOpen", new DoorsOpenState());
         addState("DoorsClosed", new DoorsClosedState());
         addState("Stopped", new StoppedState());

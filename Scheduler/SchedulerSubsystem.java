@@ -34,7 +34,7 @@ public class SchedulerSubsystem implements Runnable {
 
     private Map<Integer, ElevatorStatus> elevatorStatusMap = new HashMap<>();
 
-    DatagramPacket receiveFSPacket, replyFSPacket, receiveESPacket, sendESPacket, receiveES1StatusPacket, receiveES2StatusPacket, receiveES3StatusPacket, receiveES4StatusPacket;
+    DatagramPacket receiveFSPacket, replyFSPacket, receiveESPacket, sendESPacket;
     DatagramSocket receiveFSSocket, replyFSSocket, receiveElevatorStatusSocket, sendESSocket, receiveESResponseSocket, receiveElevatorStatusSocket1, receiveElevatorStatusSocket2, receiveElevatorStatusSocket3, receiveElevatorStatusSocket4;
     SharedDataInterface sharedData;
     FloorData command;

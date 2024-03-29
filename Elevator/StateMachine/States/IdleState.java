@@ -9,15 +9,10 @@ import SYSC3303Project.Elevator.StateMachine.States.ElevatorState;
 public class IdleState implements ElevatorState {
     @Override
     public void handleEvent(ElevatorStateMachine context, String event) {
-        // If requested arrival floor is above the current floor of the elevator
-        if ("moveUp".equals(event)) {
-            System.out.println("Elevator State Change [Move Up]: Idle -> MovingUp");
-            context.setState("MovingUp");
-        }
-        // If requested arrival floor is below the current floor of the elevator
-        else if ("moveDown".equals(event)) {
-            System.out.println("Elevator State Change [Move Down]: Idle -> MovingDown");
-            context.setState("MovingDown");
+        // If elevator is moving
+        if ("accelerating".equals(event)) {
+            System.out.println("Elevator State Change [Accelerating]: Idle -> Accelerating");
+            context.setState("Accelerating");
         }
         // If requested arrival floor is at current floor of the elevator
         else if ("stop".equals(event)) {
