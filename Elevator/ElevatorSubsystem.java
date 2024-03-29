@@ -227,7 +227,7 @@ public class ElevatorSubsystem implements Runnable {
 
     }
 
-    private void goUp(int destinationFloor) throws UnknownHostException {
+    private void goUp(int destinationFloor, int travelDistance) throws UnknownHostException {
         final double floorHeight = 3.912; // height in meters
         final double speed = 0.2784; // meters per second
         final long timePerFloor = (long) (floorHeight / speed * 1000); // milliseconds
@@ -278,6 +278,11 @@ public class ElevatorSubsystem implements Runnable {
                     return;
                 }
             }
+
+
+
+
+
             System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
             rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
 
@@ -292,7 +297,6 @@ public class ElevatorSubsystem implements Runnable {
         while (currentFloor > destinationFloor) {
             long startTime = System.currentTimeMillis();
 
-            elevatorStateMachine.triggerEvent("moveDown");
             this.direction = Direction.DOWN;
             currentFloor--;
 
