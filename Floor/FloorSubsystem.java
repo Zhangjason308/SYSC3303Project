@@ -2,7 +2,6 @@ package SYSC3303Project.Floor;
 
 import SYSC3303Project.DirectionEnum;
 import SYSC3303Project.SharedDataInterface;
-import SYSC3303Project.SimulatedClockSingleton;
 
 import javax.xml.crypto.Data;
 import java.io.*;
@@ -26,8 +25,6 @@ public class FloorSubsystem implements Runnable {
     private SharedDataInterface sharedData;
 
     public FloorSubsystem(SharedDataInterface sharedData, String fileName) throws SocketException {
-        SimulatedClockSingleton clock = SimulatedClockSingleton.getInstance();
-        clock.printCurrentTime();
         this.sharedData = sharedData;
         this.fileName = fileName;
         try {
@@ -56,30 +53,35 @@ public class FloorSubsystem implements Runnable {
         try {
 
             while (((line = bufferedReader.readLine()) != null)) {
-                SimulatedClockSingleton.getInstance().printCurrentTime();
                 Thread.sleep(5000); // next line time - current line time
                 System.out.println("---------- FLOOR SUBSYSTEM: SENT REQUEST: " + line + " ----------\n");
 
-                    String[] parts = line.split(" ");
-                    long scheduledTimeInSeconds = parseTimeToSeconds(parts[0]);
+                //int attempt = 0;
+                boolean receivedResponse = false;
+                boolean sentRequest = false;
 
-                    // Busy wait until the scheduled time matches the simulated clock's time
-                    while (true) {
-                        long currentTimeInSeconds = SimulatedClockSingleton.getInstance().getCurrentTime();
-                        if (Math.abs(scheduledTimeInSeconds - currentTimeInSeconds) < 10) {
-                            System.out.println("Current Simulated Time matches Scheduled Time. Sending Floor Data: " + line);
-                            rpcSend(line, sendAndReceiveSocket, InetAddress.getLocalHost(), 3);
-                            break;
-                        }
-                        Thread.sleep(100); // Sleep to prevent tight looping
+                while (!receivedResponse) { // Retry up to 3 times
+                    //System.out.println(Thread.currentThread().getName() + ": Attempt " + (attempt + 1));
+                    // Attempt to send the FloorData packet to the Scheduler
+                    if (!sentRequest) {
+                        rpcSend(line, sendAndReceiveSocket, InetAddress.getLocalHost(),3);
+                        sentRequest = true;
                     }
                     // Attempt to receive the reply from Scheduler
                     try {
                         rpcReceive(sendAndReceiveSocket, receivePacket, 3);
+                        receivedResponse = true;
                     }  catch (SocketTimeoutException ste) {
                         // Handle timeout exception
                         System.out.println(Thread.currentThread().getName() + ": Timeout. Resending packet.");
+                        //attempt++;
                     }
+                }
+
+                if (!receivedResponse) {
+                    System.out.println(Thread.currentThread().getName() + ": No response after multiple attempts. Exiting.");
+                    return;
+                }
             }
         } catch (IOException | InterruptedException ie) {
             throw new RuntimeException(ie);
@@ -118,14 +120,6 @@ public class FloorSubsystem implements Runnable {
             System.err.println("IOException in sendFloorData: " + e.getMessage());
             e.printStackTrace();
         }
-    }
-
-    public long parseTimeToSeconds(String timeStr) {
-        String[] hms = timeStr.split("[:.]");
-        long hoursToSeconds = Integer.parseInt(hms[0]) * 3600;
-        long minutesToSeconds = Integer.parseInt(hms[1]) * 60;
-        long seconds = Integer.parseInt(hms[2]);
-        return hoursToSeconds + minutesToSeconds + seconds;
     }
 
     public static void main(String args[]) {

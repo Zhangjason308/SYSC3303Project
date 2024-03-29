@@ -10,7 +10,15 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Collectors;
+
 
 /**
  * ElevatorSubsystem.java
@@ -21,7 +29,7 @@ import java.util.concurrent.CyclicBarrier;
 public class ElevatorSubsystem implements Runnable {
 
     private CyclicBarrier cyclicBarrier;
-
+    int height = 0;
     private int currentFloor = 1; // Starting floor
 
     private Direction direction;
@@ -37,6 +45,7 @@ public class ElevatorSubsystem implements Runnable {
     private FloorData command = null;
 
     private int id;
+    private List<AbstractMap.SimpleEntry<Integer, Integer>> targetFloors = new ArrayList<>();
 
 
 
@@ -45,42 +54,76 @@ public class ElevatorSubsystem implements Runnable {
         this.sharedData = sharedData;
         this.elevatorStateMachine = new ElevatorStateMachine();
         this.direction = Direction.STATIONARY;
+
         try {
             this.sendSocket = new DatagramSocket(id);
-            System.out.println("ElevatorSubsystem SENDING PACKETS ON PORT: " + sendSocket.getLocalPort());
+            System.out.println("ELEVATOR [" + id + "]: SENDING PACKETS ON PORT: " + sendSocket.getLocalPort());
             this.receiveSocket = new DatagramSocket(id + 1);
-            System.out.println("ElevatorSubsystem RECEIVING PACKETS ON PORT: " + receiveSocket.getLocalPort());
+            System.out.println("ELEVATOR [" + id + "]: RECEIVING PACKETS ON PORT: " + receiveSocket.getLocalPort());
         }
         catch (SocketException se){
             se.printStackTrace();
         }
-        sendStatusUpdate();
     }
 
     public String getElevatorStatus() {
-        return  id + "," + currentFloor + "," + direction;
+        // Convert target floors list to a string representation
+        String targetFloorsStr = targetFloors.isEmpty() ? "None" :
+                targetFloors.stream()
+                        .map(pair -> String.format("(%d->%d)", pair.getKey(), pair.getValue()))
+                        .collect(Collectors.joining("+"));
+
+        return id + "," + currentFloor + "," + direction + "," + elevatorStateMachine.getCurrentState().toString() + "," + targetFloorsStr;
     }
-    public void sendAndReceive() {
-        // Then, focus on listening for and processing commands from the Scheduler
-        while (!Thread.currentThread().isInterrupted()) {
+
+
+
+    public void sendAndReceive() throws UnknownHostException, InterruptedException {
+        int attempt = 0;
+        boolean receivedResponse = false;
+        boolean sentStatus = false;
+
+        while (attempt < 1 && !receivedResponse) {
+            if (!sentStatus) {
+                rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id + 10);
+                sentStatus = true;
+            }
             try {
-                command = rpcReceive(receiveSocket, receivePacket, 20); // Update the packet size as needed
-                System.out.println("---------- ELEVATOR SUBSYSTEM " + id + ": Received Command :" + command + " ----------\n");
-                processCommand(command);
-                // reply to the Scheduler indicating command processed
-                rpcSend("200", sendSocket, InetAddress.getLocalHost(), 6);
+                // Assuming rpcReceive is now correctly designed to return a FloorData object
+                command = rpcReceive(receiveSocket, new DatagramPacket(new byte[1024], 1024), 1024);
+                receivedResponse = true;
+
+                if (command != null) {
+                    // Add to targetFloors list upon receiving a valid command
+                    synchronized (this) {
+                        targetFloors.add(new AbstractMap.SimpleEntry<>(command.getArrivalFloor(), command.getDestinationFloor()));
+                    }
+                    System.out.println("---------- ELEVATOR [" + id + "]: Received Command: " + command + " ----------\n");
+                    processCommand(command);
+                    // Indicate command processed
+                    rpcSend("200", sendSocket, InetAddress.getLocalHost(), 6);
+                }
             } catch (SocketTimeoutException ste) {
-                // Handle timeout or no command received - Elevator could be idle or keep moving based on last command
-            } catch (UnknownHostException | InterruptedException e) {
-                throw new RuntimeException(e);
+                attempt++;
             }
         }
+
+        if (!receivedResponse) {
+            System.out.println("ELEVATOR [" + id + "]: No request from Scheduler");
+        }
     }
+
 
     @Override
     public void run() {
         while (!Thread.currentThread().isInterrupted()) {
-            sendAndReceive();
+            try {
+                sendAndReceive();
+            } catch (InterruptedException | UnknownHostException e) {
+                System.out.println("---------- ELEVATOR [" + id + "] SUBSYSTEM INTERRUPTED ---------- ");
+                Thread.currentThread().interrupt();
+                break;
+            }
         }
     }
 
@@ -99,22 +142,28 @@ public class ElevatorSubsystem implements Runnable {
     }
     private void rpcSend(String command, DatagramSocket socket, InetAddress address, int port) {
         try {
+
+            // Convert the updated command string to bytes
             byte[] floorDataBytes = command.getBytes(StandardCharsets.UTF_8);
-            // Create a DatagramPacket with the FloorData bytes
+
+            // Create a DatagramPacket with the updated FloorData bytes
             DatagramPacket packet = new DatagramPacket(floorDataBytes, floorDataBytes.length, address, port);
 
             // Send the packet
             socket.send(packet);
-            System.out.println("Packet Sent To Scheduler: " + StringUtil.getStringFormat(packet));
+
+            // Log the action
+            System.out.println("ELEVATOR [" + id + "]: Packet Sent To Scheduler: " + StringUtil.getStringFormat(packet));
         } catch (IOException e) {
-            System.err.println("IOException in sendFloorData: " + e.getMessage());
+            System.err.println("ELEVATOR [" + id + "]: IOException in sendFloorData: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
 
-    public void processCommand(FloorData command) throws InterruptedException {
-        System.out.println("---------- ELEVATOR SUBSYSTEM: Processing Command :" + command + " ----------\n");
+
+    public void processCommand(FloorData command) throws InterruptedException, UnknownHostException {
+        System.out.println("---------- ELEVATOR [" + id + "]: Processing Command :" + command + " ----------\n");
         int destinationFloor = command.getDestinationFloor();
         int arrivalFloor = command.getArrivalFloor();
         direction = command.getDirection();
@@ -125,12 +174,18 @@ public class ElevatorSubsystem implements Runnable {
         }
         // Elevator is already at arrival floor to pickup passengers
         else {
-            System.out.println("---------- ELEVATOR SUBSYSTEM: Already at floor " + currentFloor + " ----------\n");
+            System.out.println("---------- ELEVATOR [" + id + "]: Already at floor " + currentFloor + " ----------\n");
             elevatorStateMachine.triggerEvent("stop");
-            System.out.println("---------- ELEVATOR SUBSYSTEM: Passengers boarding ----------\n");
+            rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+
+            System.out.println("---------- ELEVATOR [" + id + "]: Passengers boarding ----------\n");
             elevatorStateMachine.triggerEvent("openDoors");
-            System.out.println("---------- ELEVATOR SUBSYSTEM: Doors Closed ----------\n");
+            rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+
+            System.out.println("---------- ELEVATOR [" + id + "]: Doors Closed ----------\n");
             elevatorStateMachine.triggerEvent("closeDoors");
+            rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+
         }
 
         // Move to the destination floor to deliver the passenger
@@ -145,8 +200,9 @@ public class ElevatorSubsystem implements Runnable {
         this.currentFloor = destinationFloor;
     }
 
-    private void moveToFloor(int destinationFloor, String action) {
-        System.out.println("---------- ELEVATOR SUBSYSTEM: Moving from floor " + currentFloor + " to floor " + destinationFloor + " ----------\n");
+
+    private void moveToFloor(int destinationFloor, String action) throws UnknownHostException {
+        System.out.println("---------- ELEVATOR [" + id + "]: Moving from floor " + currentFloor + " to floor " + destinationFloor + " ----------\n");
         // Move up is destination floor is higher than current floor
         if (currentFloor < destinationFloor) {
             goUp(destinationFloor);
@@ -155,90 +211,135 @@ public class ElevatorSubsystem implements Runnable {
         else if (currentFloor > destinationFloor) {
             goDown(destinationFloor);
         }
-        System.out.println("---------- ELEVATOR SUBSYSTEM: Stopping at floor " + currentFloor + " ----------\n");
+        System.out.println("---------- ELEVATOR [" + id + "]: Stopping at floor " + currentFloor + " ----------\n");
         elevatorStateMachine.triggerEvent("stop");
-        System.out.println("---------- ELEVATOR SUBSYSTEM: Passenger " + action + " ----------\n");
+        rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+
+        System.out.println("---------- ELEVATOR [" + id + "]:" + action + " ----------\n");
         elevatorStateMachine.triggerEvent("openDoors");
-        System.out.println("---------- ELEVATOR SUBSYSTEM: Doors Closed ----------\n");
+        rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+
+        System.out.println("---------- ELEVATOR [" + id + "]: Doors Closed ----------\n");
         elevatorStateMachine.triggerEvent("closeDoors");
+        rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+
 
     }
 
-    private void goUp(int destinationFloor) {
-        elevatorStateMachine.triggerEvent("moveUp");
+    private void goUp(int destinationFloor) throws UnknownHostException {
+        final double floorHeight = 3.912; // height in meters
+        final double speed = 0.2784; // meters per second
+        final long timePerFloor = (long) (floorHeight / speed * 1000); // milliseconds
+
         while (currentFloor < destinationFloor) {
-            try {
-                Thread.sleep((ElevatorTiming.getTravelTime(destinationFloor-currentFloor))/(destinationFloor-currentFloor)); // Simulate the time it takes to move up one floor
-                currentFloor++;
-                System.out.println("Elevator " + id + " is now at floor " + currentFloor);
+            long startTime = System.currentTimeMillis();
 
-                // Send status update to Scheduler
-                sendStatusUpdate();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
+            elevatorStateMachine.triggerEvent("moveUp");
+            this.direction = Direction.UP;
+            currentFloor++;
+
+            // Check if the current floor is a target floor
+            Iterator<AbstractMap.SimpleEntry<Integer, Integer>> iterator = targetFloors.iterator();
+            while (iterator.hasNext()) {
+                AbstractMap.SimpleEntry<Integer, Integer> floorPair = iterator.next();
+                if (floorPair.getKey() == currentFloor) { // If arrival floor is a target
+                    // Simulate stopping at this floor
+                    stopAtFloor(floorPair);
+                    iterator.remove(); // Remove from target floors after stopping
+                }
             }
+
+            while (System.currentTimeMillis() - startTime < timePerFloor) {
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
+            }
+            System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
+            rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+
         }
     }
 
+    private void stopAtFloor(AbstractMap.SimpleEntry<Integer, Integer> floorPair) throws UnknownHostException {
+        System.out.println("ELEVATOR [" + id + "]: Stopping at floor " + floorPair.getKey());
+        // Simulate actions taken at a stop, e.g., opening doors, waiting, then closing doors
+        elevatorStateMachine.triggerEvent("openDoors");
+        // Assume there's a brief delay to simulate doors open, passengers boarding/alighting
+        try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        elevatorStateMachine.triggerEvent("closeDoors");
+        rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id + 10);
+    }
 
-    private void goDown(int destinationFloor) {
-        elevatorStateMachine.triggerEvent("moveDown");
+
+
+    private void goDown(int destinationFloor) throws UnknownHostException {
+        final double floorHeight = 3.912; // height of one floor in meters
+        final double speed = 0.2784; // elevator speed in meters per second
+        final long timePerFloor = (long) (floorHeight / speed * 1000); // time per floor in milliseconds
+
         while (currentFloor > destinationFloor) {
-            try {
-                Thread.sleep((ElevatorTiming.getTravelTime(destinationFloor-currentFloor))/(destinationFloor-currentFloor)); // Simulate the time it takes to move up one floor
-                currentFloor--;
-                System.out.println("Elevator " + id + " is now at floor " + currentFloor);
+            long startTime = System.currentTimeMillis();
 
-                // Send status update to Scheduler
-                sendStatusUpdate();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
+            elevatorStateMachine.triggerEvent("moveDown");
+            this.direction = Direction.DOWN;
+            currentFloor--;
+
+            // Check if the current floor is a target floor
+            Iterator<AbstractMap.SimpleEntry<Integer, Integer>> iterator = targetFloors.iterator();
+            while (iterator.hasNext()) {
+                AbstractMap.SimpleEntry<Integer, Integer> floorPair = iterator.next();
+                if (floorPair.getKey() == currentFloor) { // If arrival floor is a target
+                    // Simulate stopping at this floor
+                    stopAtFloor(floorPair);
+                    iterator.remove(); // Remove from target floors after stopping
+                }
             }
+
+            while (System.currentTimeMillis() - startTime < timePerFloor) {
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
+            }
+            System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
         }
     }
 
-    private void sendStatusUpdate() {
-        String status = getElevatorStatus();
-        try {
-            // Assuming the Scheduler listens for status updates on a specific port
-            rpcSend(status, sendSocket, InetAddress.getLocalHost(), id+10);
-        } catch (UnknownHostException e) {
-            System.err.println("Unknown Host Exception: " + e.getMessage());
-        }
-    }
 
 
     private FloorData getFloorData(InetAddress address, int port) {
         byte[] receiveData = new byte[65535];
 
-        FloorData command1 = null;
-        try { // Receive packet from client
+        FloorData command = null;
+        try {
             DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            System.out.println("SYSC3303.ElevatorSubsystem: Waiting for Instruction from Scheduler...");
+            System.out.println("ELEVATOR [" + id + "]: Waiting for Instruction from Scheduler...");
             receiveSocket.receive(receivePacket);
-            //printPacketDetails("Received", receivePacket, receiveSocket.getLocalPort());
             // Parse the packet
-            String receivedString = new String(receivePacket.getData(), StandardCharsets.UTF_8);
+            String receivedString = new String(receivePacket.getData(), StandardCharsets.UTF_8).trim();
             String[] parts = receivedString.split(",");
             String time = parts[0];
             int arrivalFloor = Integer.parseInt(parts[1]);
             Direction direction = Direction.valueOf(parts[2]);
             int destinationFloor = Integer.parseInt(parts[3].trim());
-            command1 = new FloorData(time, arrivalFloor, direction, destinationFloor);
+            command = new FloorData(time, arrivalFloor, direction, destinationFloor);
 
-            System.out.println(command1.toString());
+            System.out.println("ELEVATOR [" + id + "]: Received Command: " + command);
+
+            // Add to targetFloors lis
+
 
 
         } catch (IOException e) {
-            System.err.println("IOException in sendFloorData: " + e.getMessage());
+            System.err.println("ELEVATOR [" + id + "]: IOException in getFloorData: " + e.getMessage());
             e.printStackTrace();
         }
 
-
-        return command1;
+        return command;
     }
+
+
+
+
     public static void main(String args[]) {
         try {
             // Retrieve the shared data interface from the RMI registry

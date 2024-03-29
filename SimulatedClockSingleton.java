@@ -3,7 +3,7 @@ package SYSC3303Project;
 public class SimulatedClockSingleton {
     private static SimulatedClockSingleton instance;
     private long currentTime = 0;
-    private final long tickInterval = 1000; // Example: 1 second
+    private final long tickInterval = 100; // Example: 1 ms
     private boolean running = true;
 
     private SimulatedClockSingleton() {}
@@ -20,10 +20,12 @@ public class SimulatedClockSingleton {
         long hours = currentTime / 3600;
         long minutes = (currentTime % 3600) / 60;
         long seconds = currentTime % 60;
+        long milliseconds = (currentTime % 1000) / 100; // Get tenths of a second
 
-        String timeFormatted = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+        String timeFormatted = String.format("%02d:%02d:%02d.%d", hours, minutes, seconds, milliseconds);
         System.out.println("Current Simulated Time: " + timeFormatted);
     }
+
 
     private void startClock() {
         Thread clockThread = new Thread(() -> {
