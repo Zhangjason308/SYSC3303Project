@@ -35,7 +35,7 @@ public class TestElevatorRunningNormally {
         Thread thread = new Thread(elevatorSubsystem);
         thread.start();
         sendSocket.send(sendPacket);
-        Thread.sleep(2000);
+        Thread.sleep(1500);
         assertTrue(elevatorSubsystem.TestTime.equals("00:00:10.0"));
         assertTrue(elevatorSubsystem.TestArrivalFloor == 2);
         assertTrue(elevatorSubsystem.TestDirection == Direction.UP);

@@ -55,6 +55,7 @@ public class ElevatorSubsystem implements Runnable {
     public Direction TestDirection;
     public int TestDestinationFloor;
     public String TestString;
+    public String TestMoveTo;
 
 
     public ElevatorSubsystem(SharedDataInterface sharedData, int id) {
@@ -135,10 +136,12 @@ public class ElevatorSubsystem implements Runnable {
                     System.out.println("---------- ELEVATOR [" + id + "]: Received  Command: " + command + " ----------\n");
 
                     FloorData command = convertStringToFloorData(rawData);
+
                     TestTime = command.getTime();
                     TestArrivalFloor = command.getArrivalFloor();
                     TestDirection = command.getDirection();
                     TestDestinationFloor = command.getDestinationFloor();
+
                     // Add to targetFloors list upon receiving a valid command
                     synchronized (this) {
                         targetFloors.add(new AbstractMap.SimpleEntry<>(command.getArrivalFloor(), command.getDestinationFloor()));
@@ -351,12 +354,13 @@ public class ElevatorSubsystem implements Runnable {
                 for (AbstractMap.SimpleEntry<Integer, Integer> entry : targetFloors) {
                     int destinationFloor = entry.getKey();
                     int arrivalFloor = entry.getValue(); // Assuming elevator is already at currentFloor for now
-                     direction = determineDirection(arrivalFloor, destinationFloor);
+                    direction = determineDirection(arrivalFloor, destinationFloor);
 
                     // Elevator moves to arrival floor to pickup passengers
                     if (arrivalFloor != currentFloor) {
                         moveToFloor(arrivalFloor);
                     } else {
+                        TestMoveTo = "---------- ELEVATOR [" + id + "]: Already at floor " + currentFloor + " ----------\n";
                         System.out.println("---------- ELEVATOR [" + id + "]: Already at floor " + currentFloor + " ----------\n");
                         performStopActions(); // Use performStopActions for opening and closing doors
                     }
@@ -377,7 +381,7 @@ public class ElevatorSubsystem implements Runnable {
     }
 
 
-    private Direction determineDirection(int currentFloor, int destinationFloor) {
+    public Direction determineDirection(int currentFloor, int destinationFloor) {
         if (currentFloor < destinationFloor) {
             return Direction.UP;
         } else if (currentFloor > destinationFloor) {
@@ -387,15 +391,12 @@ public class ElevatorSubsystem implements Runnable {
         }
     }
 
-
-
-
-
-
-    private void moveToFloor(int destinationFloor) throws UnknownHostException, InterruptedException {
+    public List<Integer> TestMoveFromTo = new ArrayList<>();
+    public void moveToFloor(int destinationFloor) throws UnknownHostException, InterruptedException {
         System.out.println("---------- ELEVATOR [" + id + "]: Moving from floor " + currentFloor + " to floor " + destinationFloor + " ----------\n");
 
         while (currentFloor != destinationFloor) {
+            TestMoveFromTo.add(currentFloor);
             if (currentFloor < destinationFloor) {
                 goUp();
             } else {
@@ -407,7 +408,7 @@ public class ElevatorSubsystem implements Runnable {
                 performStopActions();
             }
         }
-
+        TestMoveFromTo.add(currentFloor);
         // Perform actions at the destination floor
         performStopActions();
     }
@@ -464,13 +465,14 @@ public class ElevatorSubsystem implements Runnable {
 
 
 
-
+    public int TestWaitingTime = 0;
     private void goUp() throws InterruptedException, UnknownHostException {
         // Simulate the movement up by one floor with acceleration, cruising (if applicable), and deceleration
         direction = Direction.UP;
         elevatorStateMachine.setState("Accelerating");
         System.out.println("ELEVATOR [" + id + "]: Accelerating Upward");
         sleep(1500); // Acceleration for half a floor
+        TestWaitingTime += 1500;
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
 
         // Assuming cruising for half a floor if needed (can adjust based on actual mechanics or omit if not needed)
@@ -479,11 +481,13 @@ public class ElevatorSubsystem implements Runnable {
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
 
         sleep(10000); // Cruising for half a floor
+        TestWaitingTime += 1000;
         elevatorStateMachine.setState("Decelerating");
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
 
         System.out.println("ELEVATOR [" + id + "]: Decelerating Upward");
         sleep(15000); // Deceleration for half a floor
+        TestWaitingTime += 1500;
         elevatorStateMachine.setState("Stopped");
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
 
@@ -498,13 +502,16 @@ public class ElevatorSubsystem implements Runnable {
 
         System.out.println("ELEVATOR [" + id + "]: Accelerating Downward");
         sleep(1500); // Acceleration for half a floor
+        TestWaitingTime += 1500;
 
         // Assuming cruising for half a floor if needed (can adjust based on actual mechanics or omit if not needed)
         System.out.println("ELEVATOR [" + id + "]: Cruising Downward");
         sleep(10000); // Cruising for half a floor
+        TestWaitingTime += 1000;
 
         System.out.println("ELEVATOR [" + id + "]: Decelerating Downward");
         sleep(1500); // Deceleration for half a floor
+        TestWaitingTime += 1500;
 
         currentFloor--; // Successfully moved down by one floor
         System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
