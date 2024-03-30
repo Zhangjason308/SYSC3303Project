@@ -78,6 +78,13 @@ To import the project into IntelliJ IDEA from VCS:
 ## State Diagram Scheduler - Iteration 2 
 ![UML SEQUENCE Diagram](./Documentation/Iteration_2/StateMachines/SchedulerStateMachine.png)
 
+
+
+## State Diagram Elevator - Iteration 4 
+![UML CLASS Diagram](./Documentation/Iteration_4/TimingDiagram_1.png)
+
+## State Diagram Scheduler - Iteration 4 
+![UML SEQUENCE Diagram](./Documentation/Iteration_4/TimingDiagram_2.png)
 ## Sample Output
 Elevator State: Idle
 
