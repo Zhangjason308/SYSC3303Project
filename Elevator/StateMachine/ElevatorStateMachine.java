@@ -36,6 +36,8 @@ public class ElevatorStateMachine {
         addState("DoorsOpen", new DoorsOpenState());
         addState("DoorsClosed", new DoorsClosedState());
         addState("Stopped", new StoppedState());
+        addState("Disabled", new DisabledState());
+
 
     }
 

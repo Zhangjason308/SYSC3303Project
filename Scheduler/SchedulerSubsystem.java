@@ -3,6 +3,8 @@ package SYSC3303Project.Scheduler;
 import SYSC3303Project.DirectionEnum;
 import SYSC3303Project.Elevator.Direction;
 import SYSC3303Project.Elevator.ElevatorStatus;
+import SYSC3303Project.Elevator.DoorFault;
+
 //import SYSC3303Project.Elevator.ElevatorStatusReceiver;
 import SYSC3303Project.Floor.FloorData;
 import SYSC3303Project.Floor.StringUtil;
@@ -123,8 +125,34 @@ public class SchedulerSubsystem implements Runnable {
             }
         }
 
+        List<DoorFault> doorFaults = new ArrayList<>();
+
+        // Assuming the door faults are the last part of the status string
+        if (elevatorStatus.length > 5 && !elevatorStatus[5].equals("No Door Faults")) {
+            String faultsStr = elevatorStatus[5];
+            String[] faults = faultsStr.split(", ");
+            for (String fault : faults) {
+                String[] faultDetails = fault.split(":");
+                if (faultDetails.length == 2) {
+                    try {
+                        String faultType = faultDetails[0];
+                        int retryAttempts = Integer.parseInt(faultDetails[1]);
+                        doorFaults.add(new DoorFault(faultType, retryAttempts));
+                    } catch (NumberFormatException e) {
+                        System.err.println("Error: Failed to parse door fault data.");
+                        e.printStackTrace();
+                        return;
+                    }
+                } else {
+                    System.err.println("Error: Invalid door fault format.");
+                    return;
+                }
+            }
+        }
+
         ElevatorStatus newStatus = new ElevatorStatus(currentFloor, direction, elevatorId, state);
         newStatus.setTargetFloors(targetFloors);
+        newStatus.setDoorFaults(doorFaults); // Set the parsed door faults
         elevatorStatusMap.put(elevatorId, newStatus);
     }
 
@@ -178,43 +206,73 @@ public class SchedulerSubsystem implements Runnable {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     // Receive data from the floor subsystem
+                    clock.printCurrentTime();
                     System.out.println("Scheduler: Waiting to receive from Floor Subsystem...");
                     receiveFSSocket.receive(receiveFSPacket); // Listen and receive data from floor subsystem
 
-                    // Once a packet is received, parse it
-                    FloorData floorData = StringUtil.parseInput(new String(receiveFSPacket.getData(), receiveFSPacket.getOffset(), receiveFSPacket.getLength()));
-                    SchedulerStateMachine stateMachine = new SchedulerStateMachine(floorData);
-                    commandStateMachines.put(floorData, stateMachine);
-                    sharedData.addMessage(floorData); // Add the parsed data to shared data structure
+                    String dataStr = new String(receiveFSPacket.getData(), receiveFSPacket.getOffset(), receiveFSPacket.getLength());
 
-                    triggerCommandEvent(floorData,"commandReceived");
-                    System.out.println("Received from Floor: " + floorData);
-                    process(floorData); // Process the received floor data as needed
+                    if (dataStr.contains("FAULT")){
+                        clock.printCurrentTime();
+                        System.out.println("Scheduler: RECEIVED FUALT " + dataStr);
+                        String[] faultParts = dataStr.split(" ");
+                        int elevatorId = Integer.parseInt(faultParts[2]);
+                        String faultType = faultParts[3]; // Extracting fault type
 
-                    // Retrieve command from shared data structure
-                    command = sharedData.getMessage();
-                    int elevatorId = chooseElevator(command);
+                        // Prepare the fault message for the elevator
+                        String faultMessage = dataStr;
+                        byte[] faultDataBytes = faultMessage.getBytes();
 
-                    // Here, we set the target floor pair for the chosen elevator
-                    ElevatorStatus chosenElevatorStatus = elevatorStatusMap.get(elevatorId);
-                    if (chosenElevatorStatus != null) {
-                        chosenElevatorStatus.addTargetFloorPair(floorData.getArrivalFloor(), floorData.getDestinationFloor());
-                        elevatorStatusMap.put(elevatorId, chosenElevatorStatus); // Update the map with the modified ElevatorStatus
+                        // Send the fault message to the specified elevator
+                        DatagramPacket faultPacket = new DatagramPacket(faultDataBytes, faultDataBytes.length, InetAddress.getLocalHost(), elevatorId + 1); // Assuming port is based on elevatorId
+                        clock.printCurrentTime();
+                        System.out.println("Sending FAULT to Elevator " + elevatorId + ": " + faultMessage);
+                        sendESSocket.send(faultPacket);
+
+
+
                     }
-                    checkElevatorAndTransitionState(chosenElevatorStatus, floorData);
+                    else {
+                        // Once a packet is received, parse it
+                        FloorData floorData = StringUtil.parseInput(dataStr);
+
+                        SchedulerStateMachine stateMachine = new SchedulerStateMachine(floorData);
+                        commandStateMachines.put(floorData, stateMachine);
+                        sharedData.addMessage(floorData); // Add the parsed data to shared data structure
+
+                        triggerCommandEvent(floorData, "commandReceived");
+                        clock.printCurrentTime();
+                        System.out.println("Received from Floor: " + floorData);
+                        //process(floorData); // Process the received floor data as needed
+
+                        // Retrieve command from shared data structure
+                        command = sharedData.getMessage();
+                        int elevatorId = chooseElevator(command);
+
+                        // Here, we set the target floor pair for the chosen elevator
+                        ElevatorStatus chosenElevatorStatus = elevatorStatusMap.get(elevatorId);
+                        if (chosenElevatorStatus != null) {
+                            chosenElevatorStatus.addTargetFloorPair(floorData.getArrivalFloor(), floorData.getDestinationFloor());
+                            elevatorStatusMap.put(elevatorId, chosenElevatorStatus); // Update the map with the modified ElevatorStatus
+                        }
+                        System.out.println("Sending COMMAND to Elevator " + elevatorId + ": " + command);
+
+                        //checkElevatorAndTransitionState(chosenElevatorStatus, floorData);
 
 
-                    byte[] replyToFloorData = FloorData.stringByte(command).getBytes();
-                    sendESPacket = new DatagramPacket(replyToFloorData, replyToFloorData.length, InetAddress.getLocalHost(), elevatorId + 1);
-                    printAllElevatorStatuses();
-                    System.out.println("Replying to Elevator Subsystem.....");
-                    rpc_reply(sendESPacket, sendESSocket, "Elevator " + elevatorId);
+                        byte[] replyToFloorData = FloorData.stringByte(command).getBytes();
+                        sendESPacket = new DatagramPacket(replyToFloorData, replyToFloorData.length, InetAddress.getLocalHost(), elevatorId + 1);
+                        printAllElevatorStatuses();
+                        clock.printCurrentTime();
+                        System.out.println("Replying to Elevator Subsystem.....");
+                        rpc_reply(sendESPacket, sendESSocket, "Elevator " + elevatorId);
 
-                    // Prepare and send acknowledgment back to the floor subsystem
-                    byte[] replyData = "200 OK".getBytes(); // Acknowledgment message
-                    DatagramPacket replyPacket = new DatagramPacket(replyData, replyData.length, receiveFSPacket.getAddress(), receiveFSPacket.getPort());
-                    replyFSSocket.send(replyPacket); // Send acknowledgment
-                    System.out.println("Replied to Floor Subsystem with 200 OK.");
+                        // Prepare and send acknowledgment back to the floor subsystem
+                        byte[] replyData = "200 OK".getBytes(); // Acknowledgment message
+                        DatagramPacket replyPacket = new DatagramPacket(replyData, replyData.length, receiveFSPacket.getAddress(), receiveFSPacket.getPort());
+                        replyFSSocket.send(replyPacket); // Send acknowledgment
+                        System.out.println("Replied to Floor Subsystem with 200 OK.");
+                    }
                 } catch (SocketTimeoutException timeoutException) {
                     // Retry the operation if a timeout occurs
                     System.out.println("FS Socket timeout occurred. Retrying...");
@@ -248,7 +306,6 @@ public class SchedulerSubsystem implements Runnable {
             }
         }
     }
-
 
 
     // Elevator Subsystem 1 Task
@@ -466,10 +523,11 @@ public class SchedulerSubsystem implements Runnable {
     }
 
     private synchronized void printAllElevatorStatuses() {
-        // Update headers to include "Target Floors"
-        String[] headers = {"Elevator", "Level", "Direction", "State", "Target Floors"};
-        // Adjust the maximum width for each column to accommodate the new "Target Floors" column
-        int[] columnWidths = {10, 10, 10, 15, 20}; // Adjust the last column width as needed
+        // Update headers to include "Door Faults"
+        String[] headers = {"Elevator", "Level", "Direction", "State", "Target Floors", "Door Faults"};
+        // Adjust the maximum width for each column to accommodate the new "Door Faults" column
+        int[] columnWidths = {10, 10, 10, 15, 20, 15}; // Adjust the last column width as needed for door faults
+        clock.printCurrentTime();
 
         // Print header with separators
         for (int i = 0; i < headers.length; i++) {
@@ -477,43 +535,64 @@ public class SchedulerSubsystem implements Runnable {
             System.out.printf(headerFormat, headers[i]);
         }
         System.out.println("|");
+        clock.printCurrentTime();
 
         // Print a separator line
         for (int width : columnWidths) {
             System.out.print("+");
-            for (int j = 0; j < width + 1; j++) { // Add one for the space after each column
+            for (int j = 0; j < width + 1; j++) {
                 System.out.print("-");
             }
         }
-        System.out.println("+");
 
-        // Sort and print the rows of elevator status information including target floors
+
+        System.out.println("+");
+        clock.printCurrentTime();
+
+        // Sort and print the rows of elevator status information including target floors and door faults
         elevatorStatusMap.values().stream()
                 .sorted(Comparator.comparingInt(ElevatorStatus::getId))
                 .forEach(status -> {
+
                     System.out.printf("| %-" + (columnWidths[0] - 1) + "d ", status.getId()); // Elevator ID
                     System.out.printf("| %-" + (columnWidths[1] - 1) + "d ", status.getCurrentFloor()); // Elevator Level
                     System.out.printf("| %-" + (columnWidths[2] - 1) + "s ", status.getDirection().toString()); // Elevator Direction
                     System.out.printf("| %-" + (columnWidths[3] - 1) + "s ", status.getState()); // Elevator State
 
-                    // Convert target floors list to a string with pairs wrapped in parentheses and separated by ',+'
+                    // Target Floors formatting
                     String targetFloorsStr = status.getTargetFloors().isEmpty() ? "None" :
                             status.getTargetFloors().stream()
                                     .map(pair -> "(" + pair.getKey() + "->" + pair.getValue() + ")")
                                     .collect(Collectors.joining(","));
-                    System.out.printf("| %-" + (columnWidths[4] - 1) + "s ", targetFloorsStr); // Target Floors
+
+
+                    System.out.printf("| %-" + (columnWidths[4] - 1) + "s ", targetFloorsStr);
+
+                    // Door Faults formatting
+                    String doorFaultsStr = status.getDoorFaults().isEmpty() ? "None" :
+                            status.getDoorFaults().stream()
+                                    .map(fault -> fault.getFaultType() + ":" + fault.getRetryAttempts())
+                                    .collect(Collectors.joining(", "));
+
+                    System.out.printf("| %-" + (columnWidths[5] - 1) + "s ", doorFaultsStr); // Door Faults
+
                     System.out.println("|");
+                    clock.printCurrentTime();
+
                 });
 
         // Print bottom table border
         for (int width : columnWidths) {
             System.out.print("+");
-            for (int j = 0; j < width + 1; j++) { // Add one for the space after each column
+            for (int j = 0; j < width + 1; j++) {
                 System.out.print("-");
             }
         }
         System.out.println("+");
+
+
     }
+
 
 
 

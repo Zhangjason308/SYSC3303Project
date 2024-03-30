@@ -2,54 +2,33 @@ package SYSC3303Project;
 
 public class SimulatedClockSingleton {
     private static SimulatedClockSingleton instance;
-    private long currentTime = 0;
-    private final long tickInterval = 1000; // Example: 1 ms
-    private boolean running = true;
 
     private SimulatedClockSingleton() {}
 
     public static synchronized SimulatedClockSingleton getInstance() {
         if (instance == null) {
             instance = new SimulatedClockSingleton();
-            instance.startClock();
         }
         return instance;
     }
 
     public void printCurrentTime() {
-        long hours = currentTime / 3600;
-        long minutes = (currentTime % 3600) / 60;
-        long seconds = currentTime % 60;
-        long milliseconds = (currentTime % 1000) / 100; // Get tenths of a second
+        // Get current system time in milliseconds since epoch
+        long currentTimeMillis = System.currentTimeMillis();
 
-        String timeFormatted = String.format("%02d:%02d:%02d.%d", hours, minutes, seconds, milliseconds);
-        System.out.println("Current Simulated Time: " + timeFormatted);
-    }
+        // Convert milliseconds to hours, minutes, seconds, and tenths of a second
+        long hours = (currentTimeMillis / (3600 * 1000)) % 24; // Mod 24 for hours in a day
+        long minutes = (currentTimeMillis / (60 * 1000)) % 60; // Mod 60 for minutes in an hour
+        long seconds = (currentTimeMillis / 1000) % 60; // Mod 60 for seconds in a minute
+        long tenths = (currentTimeMillis / 100) % 10; // Get tenths of a second
 
-
-    private void startClock() {
-        Thread clockThread = new Thread(() -> {
-            while (running) {
-                try {
-                    Thread.sleep(tickInterval);
-                    currentTime++;
-                    // Notify listeners or just update the time
-                } catch (InterruptedException e) {
-                    running = false;
-                    Thread.currentThread().interrupt();
-                }
-            }
-        });
-        clockThread.start();
+        // Format the time and print
+        String timeFormatted = String.format("%02d:%02d:%02d.%d", hours, minutes, seconds, tenths);
+        System.out.print("[" + timeFormatted + "]");
     }
 
     public long getCurrentTime() {
-        return currentTime;
-    }
-
-    public void stopClock() {
-        running = false;
+        // Return current system time in milliseconds since epoch
+        return System.currentTimeMillis();
     }
 }
-
-
