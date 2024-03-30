@@ -152,6 +152,15 @@ public class FloorSubsystem implements Runnable {
         }
     }
 
+    public String formatFloorRequest(String inputLine) {
+        String[] parts = inputLine.split(" ");
+        String time = parts[0];
+        String floor = parts[1];
+        String direction = parts[2];
+        String destination = parts[3];
+        return time + " " + floor + " " + direction + " " + destination;
+    }
+
     public static void main(String args[]) {
         try {
             SharedDataInterface sharedData = (SharedDataInterface) Naming.lookup("rmi://localhost/SharedData");

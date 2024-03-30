@@ -28,7 +28,7 @@ public class TestInformationWithFault {
         SharedDataInterface sharedData = new TestInitializationOfAnElevator.TestSharedDataInterface();
         SchedulerSubsystem schedulerSubsystem = new SchedulerSubsystem(sharedData);
         FloorSubsystem floorSubsystem = new FloorSubsystem(sharedData, "Test/SchedulerSubsystemTest1.csv");
-        ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem(sharedData, 12);
+        ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem(sharedData, 10);
         Thread thread1 = new Thread(schedulerSubsystem);
         Thread thread2 = new Thread(floorSubsystem);
         Thread thread3 = new Thread(elevatorSubsystem);
@@ -36,7 +36,6 @@ public class TestInformationWithFault {
         thread2.start();
         thread3.start();
         Thread.sleep(8000);
-        System.out.println(schedulerSubsystem.TestFault);
         assertTrue(schedulerSubsystem.TestFault.contains("Sending FAULT to Elevator 10: 00:00:07.0 DOOR_FAULT 10 STUCK_OPEN 2"));
     }
 }

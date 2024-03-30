@@ -16,6 +16,7 @@ public class ElevatorStateMachine {
     private ElevatorState currentState;
 
 
+
     private  int triggerTime = 0;
     public int getTriggerTime() {return triggerTime;}
     List<String> stateChange = new ArrayList<>();

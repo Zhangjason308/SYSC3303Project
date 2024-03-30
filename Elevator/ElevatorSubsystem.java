@@ -25,6 +25,9 @@ public class ElevatorSubsystem implements Runnable {
 
     int height = 0;
     private int currentFloor = 1; // Starting floor
+    public int getCurrentFloor() {return currentFloor;}
+
+    public void setCurrentFloor(int currentFloor) {this.currentFloor = currentFloor;}
 
     private Direction direction;
     private ElevatorStateMachine elevatorStateMachine;
@@ -47,6 +50,11 @@ public class ElevatorSubsystem implements Runnable {
     private boolean isDoorStuckOpen = false;
     private boolean isDoorStuckClosed = false;
 
+    public String TestTime;
+    public int TestArrivalFloor;
+    public Direction TestDirection;
+    public int TestDestinationFloor;
+    public String TestString;
 
 
     public ElevatorSubsystem(SharedDataInterface sharedData, int id) {
@@ -101,6 +109,7 @@ public class ElevatorSubsystem implements Runnable {
         }
     };
 
+
     public void sendAndReceive() throws UnknownHostException, InterruptedException {
         int attempt = 0;
         boolean receivedResponse = false;
@@ -119,17 +128,22 @@ public class ElevatorSubsystem implements Runnable {
                 if (rawData.contains("DOOR_FAULT")) {
                     // Handle the fault
                     injectDoorFault(rawData);
+                    TestString = "---------- ELEVATOR [" + id + "]: Received Door Fault: " + rawData + " ----------\n";
                     System.out.println("---------- ELEVATOR [" + id + "]: Received Door Fault: " + rawData + " ----------\n");
                     rpcSend("DOOR_FAULT RECEIVED", sendSocket, InetAddress.getLocalHost(), id + 10);
                 } else {
                     System.out.println("---------- ELEVATOR [" + id + "]: Received  Command: " + command + " ----------\n");
 
                     FloorData command = convertStringToFloorData(rawData);
-
+                    TestTime = command.getTime();
+                    TestArrivalFloor = command.getArrivalFloor();
+                    TestDirection = command.getDirection();
+                    TestDestinationFloor = command.getDestinationFloor();
                     // Add to targetFloors list upon receiving a valid command
                     synchronized (this) {
                         targetFloors.add(new AbstractMap.SimpleEntry<>(command.getArrivalFloor(), command.getDestinationFloor()));
                     }
+                    TestString = "---------- ELEVATOR [" + id + "]: Received Command: " + command + " ----------\n";
                     System.out.println("---------- ELEVATOR [" + id + "]: Received Command: " + command + " ----------\n");
                     //processCommand(command);
                     // Indicate command received
@@ -497,7 +511,6 @@ public class ElevatorSubsystem implements Runnable {
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
     }
 
-
     public void addDoorFault(DoorFault fault) {
         this.doorFaults.add(fault);
     }
@@ -509,11 +522,6 @@ public class ElevatorSubsystem implements Runnable {
     public void simulateHandleDoorFaults() {
         this.doorFaults.clear(); // Simplistically assuming all faults are "resolved" immediately for testing
     }
-
-
-
-
-
 
     public static void main(String args[]) {
         try {
