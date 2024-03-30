@@ -67,8 +67,7 @@ To import the project into IntelliJ IDEA from VCS:
 ## UML CORE Class Diagram Iteration 4 
 ![UML CLASS Diagram](./Documentation/Iteration_2/Subsystem_StateMachine_UML_Class_Diagrams.png).
 
-## UML Sequence Diagram Schedule Iteration 4 
-![UML SEQUENCE Diagram](./Documentation/Iteration_4/UML_Sequence_Diagram_Schedule_Iteration_4.png).
+
 
 ## State Diagram Elevator - Iteration 4 
 ![State Diagram Elevator](./Documentation/Iteration_4/StateMachines/ElevatorStateMachine.png).
