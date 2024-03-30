@@ -114,13 +114,13 @@ public class FloorSubsystem implements Runnable {
         }
     }
 
-    public long parseTimeToSeconds(String timeStr) {
-        String[] hms = timeStr.split("[:.]");
-        long hoursToSeconds = Integer.parseInt(hms[0]) * 3600;
-        long minutesToSeconds = Integer.parseInt(hms[1]) * 60;
-        long seconds = Integer.parseInt(hms[2]);
-        return hoursToSeconds + minutesToSeconds + seconds;
-    }
+//    public long parseTimeToSeconds(String timeStr) {
+//        String[] hms = timeStr.split("[:.]");
+//        long hoursToSeconds = Integer.parseInt(hms[0]) * 3600;
+//        long minutesToSeconds = Integer.parseInt(hms[1]) * 60;
+//        long seconds = Integer.parseInt(hms[2]);
+//        return hoursToSeconds + minutesToSeconds + seconds;
+//    }
 
     private void rpcReceive(DatagramSocket socket, DatagramPacket packet, int byteArrSize) throws SocketTimeoutException {
         byte[] data = new byte[byteArrSize];

@@ -43,6 +43,9 @@ public class SchedulerSubsystem implements Runnable {
     FloorData command;
     SimulatedClockSingleton clock;
 
+    public String TestFault;
+    public String TestInformationOfElevator;
+
     public SchedulerSubsystem(SharedDataInterface sharedData) throws InterruptedException {
         this.clock = SimulatedClockSingleton.getInstance();
         clock.getInstance().printCurrentTime();
@@ -226,11 +229,9 @@ public class SchedulerSubsystem implements Runnable {
                         // Send the fault message to the specified elevator
                         DatagramPacket faultPacket = new DatagramPacket(faultDataBytes, faultDataBytes.length, InetAddress.getLocalHost(), elevatorId + 1); // Assuming port is based on elevatorId
                         clock.printCurrentTime();
+                        TestFault = "Sending FAULT to Elevator " + elevatorId + ": " + faultMessage;
                         System.out.println("Sending FAULT to Elevator " + elevatorId + ": " + faultMessage);
                         sendESSocket.send(faultPacket);
-
-
-
                     }
                     else {
                         // Once a packet is received, parse it
@@ -320,6 +321,7 @@ public class SchedulerSubsystem implements Runnable {
                 String elevatorRequest = new String(receivePacket.getData(), receivePacket.getOffset(), receivePacket.getLength());
                 addElevatorStatus(elevatorRequest);
                 clock.getInstance().printCurrentTime();
+                TestInformationOfElevator = "Received from Elevator Subsystem 10: " + elevatorRequest;
                 System.out.println("Received from Elevator Subsystem 10: " + elevatorRequest);
                 printAllElevatorStatuses();
             }

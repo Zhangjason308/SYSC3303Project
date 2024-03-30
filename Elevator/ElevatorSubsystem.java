@@ -498,7 +498,17 @@ public class ElevatorSubsystem implements Runnable {
     }
 
 
+    public void addDoorFault(DoorFault fault) {
+        this.doorFaults.add(fault);
+    }
 
+    public List<DoorFault> getDoorFaults() {
+        return doorFaults;
+    }
+
+    public void simulateHandleDoorFaults() {
+        this.doorFaults.clear(); // Simplistically assuming all faults are "resolved" immediately for testing
+    }
 
 
 
