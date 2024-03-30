@@ -1,5 +1,6 @@
 package SYSC3303Project.Scheduler.StateMachine;
 
+import SYSC3303Project.Floor.FloorData;
 import SYSC3303Project.Scheduler.StateMachine.States.*;
 
 import java.util.ArrayList;
@@ -15,22 +16,25 @@ public class SchedulerStateMachine {
     public Map<String, SchedulerState> getStates() {return states;}
     private SchedulerState currentState;
 
+    private FloorData command;
+
 
     private  int triggerTime = 0;
     public int getTriggerTime() {return triggerTime;}
     List<String> stateChange = new ArrayList<>();
     public List<String> getStateChange() {return stateChange;}
 
-    public SchedulerStateMachine() {
+    public SchedulerStateMachine(FloorData command) {
         states = new HashMap<>();
         initializeStates();
         setState("Idle");
+        this.command = command;
     }
 
     private void initializeStates() {
         addState("Idle", new IdleState());
         addState("CommandSelected", new CommandSelectedState());
-        addState("WaitingForArrivalSensor", new IdleState.WaitingForArrivalSensorState());
+        addState("WaitingForArrivalSensor", new WaitingForArrivalSensorState());
         addState("WaitingForDestinationSensor", new WaitingForDestinationSensorState());
         addState("CommandComplete", new CommandCompleteState());
     }
@@ -45,7 +49,7 @@ public class SchedulerStateMachine {
             throw new IllegalStateException("State '" + stateName + "' does not exist.");
         }
         this.currentState = state;
-        currentState.displayState();
+        currentState.displayState(command);
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
@@ -54,7 +58,7 @@ public class SchedulerStateMachine {
     }
 
     public void triggerEvent(String event) {
-        currentState.handleEvent(this, event);
+        currentState.handleEvent(this, event, command);
         triggerTime++;
         stateChange.add(event);
         try {

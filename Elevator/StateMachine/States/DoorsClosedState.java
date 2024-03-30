@@ -9,7 +9,7 @@ public class DoorsClosedState implements ElevatorState {
     @Override
     public void handleEvent(ElevatorStateMachine context, String event) {
         // If elevator is moving
-        if ("accelerating".equals(event)) {
+        if ("accelerate".equals(event)) {
             System.out.println("Elevator State Change [Accelerating]: DoorsClosed -> Accelerating");
             context.setState("Accelerating");
         }

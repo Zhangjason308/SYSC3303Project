@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 
 public class ElevatorSubsystem implements Runnable {
 
-    private CyclicBarrier cyclicBarrier;
     int height = 0;
     private int currentFloor = 1; // Starting floor
 
@@ -201,9 +200,8 @@ public class ElevatorSubsystem implements Runnable {
     }
 
 
-    private void moveToFloor(int destinationFloor, String action) throws UnknownHostException {
+    private void moveToFloor(int destinationFloor, String action) throws UnknownHostException, InterruptedException {
         System.out.println("---------- ELEVATOR [" + id + "]: Moving from floor " + currentFloor + " to floor " + destinationFloor + " ----------\n");
-        elevatorStateMachine.triggerEvent("accelerating");
         // Move up is destination floor is higher than current floor
         if (currentFloor < destinationFloor) {
             goUp(destinationFloor, destinationFloor - currentFloor);
@@ -227,96 +225,160 @@ public class ElevatorSubsystem implements Runnable {
 
     }
 
-    private void goUp(int destinationFloor, int travelDistance) throws UnknownHostException {
+    public long getTimePerFloor(int choice) {//right now the accelerate/decelerate time for half a floor is the same as crusing for a whole floor
         final double floorHeight = 3.912; // height in meters
         final double speed = 0.2784; // meters per second
-        final long timePerFloor = (long) (floorHeight / speed * 1000); // milliseconds
-
-        while (currentFloor < destinationFloor) {
-            long startTime = System.currentTimeMillis();
-            long timeTracker = System.currentTimeMillis();
-            this.direction = Direction.UP;
-//            while (System.currentTimeMillis() < startTime + timePerFloor/2){
-//
-//            }
-            currentFloor++;
-
-
-
-//            while (System.currentTimeMillis() < startTime + timePerFloor * (travelDistance - 1)){
-//                if(System.currentTimeMillis() + timePerFloor <= timeTracker - 500 || System.currentTimeMillis() + timePerFloor > timeTracker + 500){
-//                    currentFloor++;
-//                    timeTracker = System.currentTimeMillis();
-//                }
-//            }
-
-
-//            while (System.currentTimeMillis() < startTime + timePerFloor/2){
-//                if(System.currentTimeMillis() + timePerFloor <= timeTracker - 500 || System.currentTimeMillis() + timePerFloor > timeTracker + 500){
-//                    currentFloor++;
-//                    timeTracker = System.currentTimeMillis();
-//                }
-//            }
-
-
-
-            // Check if the current floor is a target floor
-            Iterator<AbstractMap.SimpleEntry<Integer, Integer>> iterator = targetFloors.iterator();
-            while (iterator.hasNext()) {
-                AbstractMap.SimpleEntry<Integer, Integer> floorPair = iterator.next();
-                elevatorStateMachine.triggerEvent("cruise");
-                if (floorPair.getValue() == currentFloor) { // If arrival floor is a target
-                    // Simulate stopping at this floor
-                    elevatorStateMachine.triggerEvent("decelerate");
-                    stopAtFloor(floorPair);
-                    iterator.remove(); // Remove from target floors after stopping
-                }
-            }
-
-            while (System.currentTimeMillis() - startTime < timePerFloor) {
-                if (Thread.currentThread().isInterrupted()) {
-                    return;
-                }
-            }
-
-
-
-
-
-            System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
-            rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
-
+        final double acceleration = 0.01981; // meters per second square
+        final long timePerFloorCruise = (long) (floorHeight / speed * 100); // t = d/t in millisecond
+        final long halfAndAccelerateTime = (long) (1.4); // t = root(2d/a) in milliseconds
+        final long timePerHalfFloorCruise = (long) (0.7);
+        final long timePerFloor1Floor = (long) (2.8);
+        if(choice == 0){//only going 1 floor so its the time to accelerate then descelerate right after
+            return timePerFloor1Floor;
         }
+        else if(choice == 1){//accelerating/decelerating
+            return  halfAndAccelerateTime;
+        }
+        else if(choice == 2){//going half a floor crusing
+            return timePerHalfFloorCruise;
+        }
+        else {//just cruising a floor
+            return timePerFloorCruise;
+        }
+
     }
 
-    private void goDown(int destinationFloor, int travelDistance) throws UnknownHostException {
-        final double floorHeight = 3.912; // height of one floor in meters
-        final double speed = 0.2784; // elevator speed in meters per second
-        final long timePerFloor = (long) (floorHeight / speed * 1000); // time per floor in milliseconds
 
-        while (currentFloor > destinationFloor) {
-            long startTime = System.currentTimeMillis();
+    //the order is half floor acceleration, half floor deceleration, add 1 to floor, do rest of floors as cruise till last then half floor where you cruise half a floor then decelerate a floor
+    private void goUp(int destinationFloor, int travelDistance) throws UnknownHostException, InterruptedException {
 
-            this.direction = Direction.DOWN;
-            currentFloor--;
+        //long startTime = System.currentTimeMillis();
 
-            // Check if the current floor is a target floor
-            Iterator<AbstractMap.SimpleEntry<Integer, Integer>> iterator = targetFloors.iterator();
-            while (iterator.hasNext()) {
-                AbstractMap.SimpleEntry<Integer, Integer> floorPair = iterator.next();
-                if (floorPair.getKey() == currentFloor) { // If arrival floor is a target
-                    // Simulate stopping at this floor
-                    stopAtFloor(floorPair);
-                    iterator.remove(); // Remove from target floors after stopping
-                }
-            }
-
-            while (System.currentTimeMillis() - startTime < timePerFloor) {
-                if (Thread.currentThread().isInterrupted()) {
-                    return;
-                }
-            }
+        elevatorStateMachine.triggerEvent("accelerate");
+        long timeTracker = System.currentTimeMillis();//variable not used right now but was used to store the time to compare with the current time
+        rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+        this.direction = Direction.UP;
+        Thread.sleep(getTimePerFloor(1));
+        timeTracker = System.currentTimeMillis();
+        if(Math.abs(destinationFloor - travelDistance) == 1){//if you only go 1 floor so like 1 - 2 or 2 - 3, do this as you cruise for basically no time
+            elevatorStateMachine.triggerEvent("cruise");
+            rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+            Thread.sleep(getTimePerFloor(2));
+            elevatorStateMachine.triggerEvent("decelerate");
+            currentFloor++;
+            stopAtFloor(targetFloors.get(0));
             System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
+            rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+        }
+        else{//this is for everything else that isn't traveling 1 floor
+            elevatorStateMachine.triggerEvent("cruise");
+            rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+            Thread.sleep(getTimePerFloor(2));
+            timeTracker = System.currentTimeMillis();
+            currentFloor++;
+            rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+            boolean travel2FloorTotal = false;
+            while (currentFloor < destinationFloor) {//if you are traveling 2 floors total like 1-3 you want to skip the if statement below because you do half floor acceleration into half floor cruise into half floor cruise into half floor deceleration
+                if(Math.abs(currentFloor - destinationFloor) != 1 || travel2FloorTotal){
+                    Thread.sleep(getTimePerFloor(3));
+                    timeTracker = System.currentTimeMillis();
+                    currentFloor++;
+                    travel2FloorTotal = true;
+                    rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+                }
+
+                // Check if the current floor is a target floor
+                Iterator<AbstractMap.SimpleEntry<Integer, Integer>> iterator = targetFloors.iterator();
+                while (iterator.hasNext()) {
+                    AbstractMap.SimpleEntry<Integer, Integer> floorPair = iterator.next();
+                    if (floorPair.getValue() - 1 == currentFloor) { // if the floor before arival floor is target
+                        // Simulate stopping at this floor
+                        Thread.sleep(getTimePerFloor(2));
+                        timeTracker = System.currentTimeMillis();
+                        elevatorStateMachine.triggerEvent("decelerate");
+                        rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+                        Thread.sleep(getTimePerFloor(1));
+                        stopAtFloor(floorPair);
+                        iterator.remove(); // Remove from target floors after stopping
+                    }
+                }
+
+//            while (System.currentTimeMillis() - startTime < timePerFloor) {
+//                if (Thread.currentThread().isInterrupted()) {
+//                    return;
+//                }
+//            }
+
+                System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
+                rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+
+            }
+        }
+
+    }
+
+    private void goDown(int destinationFloor, int travelDistance) throws UnknownHostException, InterruptedException {
+        //long startTime = System.currentTimeMillis();
+
+        elevatorStateMachine.triggerEvent("accelerate");
+        long timeTracker = System.currentTimeMillis();
+        rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+        this.direction = Direction.DOWN;
+        Thread.sleep(getTimePerFloor(1));
+        timeTracker = System.currentTimeMillis();
+        if(Math.abs(destinationFloor - travelDistance) == 1){
+            elevatorStateMachine.triggerEvent("cruise");
+            rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+            Thread.sleep(getTimePerFloor(2));
+            elevatorStateMachine.triggerEvent("decelerate");
+            currentFloor--;
+            stopAtFloor(targetFloors.get(0));
+            System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
+            rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+        }
+        else{
+            elevatorStateMachine.triggerEvent("cruise");
+            rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+            Thread.sleep(getTimePerFloor(2));
+            timeTracker = System.currentTimeMillis();
+            currentFloor--;
+            rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+            boolean travel2FloorTotal = false;
+            while (currentFloor > destinationFloor) {
+                if(Math.abs(currentFloor - destinationFloor) != 1 || travel2FloorTotal){
+                    Thread.sleep(getTimePerFloor(3));
+                    timeTracker = System.currentTimeMillis();
+                    currentFloor--;
+                    travel2FloorTotal = true;
+                    rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+                }
+
+                // Check if the current floor is a target floor
+                Iterator<AbstractMap.SimpleEntry<Integer, Integer>> iterator = targetFloors.iterator();
+                while (iterator.hasNext()) {
+                    AbstractMap.SimpleEntry<Integer, Integer> floorPair = iterator.next();
+                    if (floorPair.getValue() + 1 == currentFloor) { // If arrival floor is a target
+                        // Simulate stopping at this floor
+                        Thread.sleep(getTimePerFloor(2));
+                        timeTracker = System.currentTimeMillis();
+                        elevatorStateMachine.triggerEvent("decelerate");
+                        rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+                        Thread.sleep(getTimePerFloor(1));
+                        stopAtFloor(floorPair);
+                        iterator.remove(); // Remove from target floors after stopping
+                    }
+                }
+
+//            while (System.currentTimeMillis() - startTime < timePerFloor) {
+//                if (Thread.currentThread().isInterrupted()) {
+//                    return;
+//                }
+//            }
+
+                System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
+                rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+
+            }
         }
     }
 
