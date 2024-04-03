@@ -10,9 +10,9 @@ public class IdleState implements ElevatorState {
     @Override
     public void handleEvent(ElevatorStateMachine context, String event) {
         // If elevator is moving
-        if ("accelerate".equals(event)) {
+        if ("move".equals(event)) {
             System.out.println("Elevator State Change [Accelerating]: Idle -> Accelerating");
-            context.setState("Accelerating");
+            context.setState("Moving");
         }
         // If requested arrival floor is at current floor of the elevator
         else if ("stop".equals(event)) {

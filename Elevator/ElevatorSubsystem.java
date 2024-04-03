@@ -438,10 +438,14 @@ public class ElevatorSubsystem implements Runnable {
     // Assuming targetFloors is a Map<Integer, Integer> where key is the passenger ID and value is the destination floor
     private void performStopActions() throws UnknownHostException, InterruptedException {
         System.out.println("ELEVATOR [" + id + "]: Stopping at floor " + currentFloor + " ----------\n");
+        elevatorStateMachine.setState("Stopped");
+        rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+        System.out.println("ELEVATOR [" + id + "]: Doors Opening " + "----------\n");
+        sleep(3000); // Simulate time for doors opening (3 secs)
         elevatorStateMachine.setState("DoorsOpen");
         // Assume rpcSend is a method that sends the elevator's status somewhere
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
-        sleep(10000); // Simulate time for passengers to alight and board
+        sleep(5000); // Simulate time for passengers to board (5 secs)
 
         // Remove passengers whose destination is the current floor and whose travel direction matches the elevator's direction
         targetFloors.removeIf(entry -> {
@@ -459,6 +463,8 @@ public class ElevatorSubsystem implements Runnable {
             return removeForUp || removeForDown;
         });
 
+        System.out.println("ELEVATOR [" + id + "]: Doors Closing " + "----------\n");
+        sleep(3000); // Simulate time for doors closing (3 secs)
         elevatorStateMachine.setState("DoorsClosed");
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
     }
@@ -469,27 +475,11 @@ public class ElevatorSubsystem implements Runnable {
     private void goUp() throws InterruptedException, UnknownHostException {
         // Simulate the movement up by one floor with acceleration, cruising (if applicable), and deceleration
         direction = Direction.UP;
-        elevatorStateMachine.setState("Accelerating");
-        System.out.println("ELEVATOR [" + id + "]: Accelerating Upward");
-        sleep(1500); // Acceleration for half a floor
-        TestWaitingTime += 1500;
+        elevatorStateMachine.setState("Moving");
+        System.out.println("ELEVATOR [" + id + "]: Moving Up");
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
-
-        // Assuming cruising for half a floor if needed (can adjust based on actual mechanics or omit if not needed)
-        System.out.println("ELEVATOR [" + id + "]: Cruising Upward");
-        elevatorStateMachine.setState("Cruising");
-        rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
-
-        sleep(10000); // Cruising for half a floor
-        TestWaitingTime += 1000;
-        elevatorStateMachine.setState("Decelerating");
-        rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
-
-        System.out.println("ELEVATOR [" + id + "]: Decelerating Upward");
-        sleep(15000); // Deceleration for half a floor
-        TestWaitingTime += 1500;
-        elevatorStateMachine.setState("Stopped");
-        rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+        sleep(10000); // Acceleration for half a floor
+        TestWaitingTime += 10000;
 
         currentFloor++; // Successfully moved up by one floor
         System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
@@ -500,18 +490,11 @@ public class ElevatorSubsystem implements Runnable {
         // Simulate the movement down by one floor with acceleration, cruising (if applicable), and deceleration
         direction = Direction.DOWN;
 
-        System.out.println("ELEVATOR [" + id + "]: Accelerating Downward");
-        sleep(1500); // Acceleration for half a floor
-        TestWaitingTime += 1500;
-
-        // Assuming cruising for half a floor if needed (can adjust based on actual mechanics or omit if not needed)
-        System.out.println("ELEVATOR [" + id + "]: Cruising Downward");
-        sleep(10000); // Cruising for half a floor
-        TestWaitingTime += 1000;
-
-        System.out.println("ELEVATOR [" + id + "]: Decelerating Downward");
-        sleep(1500); // Deceleration for half a floor
-        TestWaitingTime += 1500;
+        elevatorStateMachine.setState("Moving");
+        System.out.println("ELEVATOR [" + id + "]: Moving Down");
+        rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+        sleep(10000); // Acceleration for half a floor
+        TestWaitingTime += 10000;
 
         currentFloor--; // Successfully moved down by one floor
         System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);

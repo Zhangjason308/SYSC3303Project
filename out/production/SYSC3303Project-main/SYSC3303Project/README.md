@@ -1,7 +1,7 @@
 # SYSC3303Project - Elevator Control System
 
 ## Description
-Iteration_2 of SYSC3303 for Group 8.  
+Iteration_4 of SYSC3303 for Group 8.  
 Building off of Iteration I, Scheduler and Elevator Subsystems now have state machines. Project was heavily refactored in this Iteration.
 
 ## Installation
@@ -18,8 +18,7 @@ To import the project into IntelliJ IDEA from VCS:
 # Project Structure
 
 ## Documentation
-- **Iteration_1**: Contains documentation and resources for iteration 1.
-- **Iteration_2**: Contains documentation and resources for iteration 2.
+- **Iteration_4**: Contains documentation and resources for iteration 4.
 
 ## Elevator
 - **StateMachine**: Contains the elevator state machine related classes.
@@ -62,62 +61,38 @@ To import the project into IntelliJ IDEA from VCS:
 - `Synchronizer.java`: Synchronizes communication between various subsystems.
 - `ThreadMain.java`: The main class that launches the system and initializes all subsystems.
 
-## UML MASTER Class Diagram Iteration 2 (Zoom in)
+## UML MASTER Class Diagram Iteration 4 (Zoom in)
 ![UML CLASS Diagram](./Documentation/Iteration_2/Master_UML_Class_Diagram.svg)
-
-## UML CORE Class Diagram Iteration 2 
+## UML CORE Class Diagram Iteration 4 
 ![UML CLASS Diagram](./Documentation/Iteration_2/Subsystem_StateMachine_UML_Class_Diagrams.png).
 
-## UML Sequence Diagram Iteration 2
-![UML SEQUENCE Diagram](./Documentation/Iteration_2/UML_SequenceDiagram_Iteration_2.png)
 
 
-## State Diagram Elevator - Iteration 2 
-![UML CLASS Diagram](./Documentation/Iteration_2/StateMachines/ElevatorStateMachine.png)
+## State Diagram Elevator - Iteration 4 
+![State Diagram Elevator](./Documentation/Iteration_4/StateMachines/ElevatorStateMachine.png).
 
-## State Diagram Scheduler - Iteration 2 
-![UML SEQUENCE Diagram](./Documentation/Iteration_2/StateMachines/SchedulerStateMachine.png)
+## State Diagram Scheduler - Iteration 4 
+![State Diagram Scheduler](./Documentation/Iteration_4/StateMachines/SchedulerStateMachine.png).
+
+## Floor UML Class Diagram
+![Floor UML Class Diagram](./Documentation/Iteration_4/Floor_Uml_Class.png).
+
+## Floor UML Sequence Diagram
+![Floor UML Sequence Diagram](./Documentation/Iteration_4/Floor_Uml_Seq.png).
+
+## Scheduler UML Class Diagram
+![Scheduler UML Class Diagram](./Documentation/Iteration_4/Sched_UML_Class.png).
+
+## Scheduler UML Sequence Diagram
+![Scheduler UML Sequence Diagram](./Documentation/Iteration_4/Sched_UML_Seq.png).
+
+## Timing Diagram 1
+![Timing Diagram 1](./Documentation/Iteration_4/TimingDiagram_1.png).
+
+## Timing Diagram 2
+![Timing Diagram 2](./Documentation/Iteration_4/TimingDiagram_2.png).
 
 ## Sample Output
-Elevator State: Idle
-
-Scheduler State: Idle
-
----------- FLOOR SUBSYSTEM: SENT REQUEST: [Time: 14:04:15.0, Arrival Floor: 1, Direction: UP, Destination Floor: 4] ----------
-
-Scheduler State Change [Command Queue is not empty]: Idle -> CommandSelected
-Scheduler State: CommandSelected
-
----------- FLOOR SUBSYSTEM: SENT REQUEST: [Time: 14:05:15.0, Arrival Floor: 2, Direction: UP, Destination Floor: 4] ----------
-
----------- FLOOR SUBSYSTEM: SENT REQUEST: [Time: 14:07:15.0, Arrival Floor: 3, Direction: UP, Destination Floor: 4] ----------
-
----------- SCHEDULER SUBSYSTEM: Dispatching Floor Request to Elevator: [Time: 14:04:15.0, Arrival Floor: 1, Direction: UP, Destination Floor: 4] ----------
-
-Scheduler State Change [Command Sent]: CommandSelected -> WaitingForArrivalSensor
-Scheduler State: WaitingForArrivalSensor
-
----------- ELEVATOR SUBSYSTEM: Received Command :[Time: 14:04:15.0, Arrival Floor: 1, Direction: UP, Destination Floor: 4] ----------
-
----------- ELEVATOR SUBSYSTEM: Processing Command :[Time: 14:04:15.0, Arrival Floor: 1, Direction: UP, Destination Floor: 4] ----------
-
----------- ELEVATOR SUBSYSTEM: Already at floor 1 ----------
-
-Elevator State Change [Stop]: Idle -> Stopped
-Elevator State: Stopped
-
-Scheduler State Change [Arrival Sensor is True]: WaitingForArrivalSensor -> WaitingForDestinationSensor
-Scheduler State: WaitingForDestinationSensor
-
----------- ELEVATOR SUBSYSTEM: Passengers boarding ----------
-
-Elevator State Change [Open Doors]: Stopped -> DoorsOpen
-Elevator State: DoorsOpen
-
----------- ELEVATOR SUBSYSTEM: Doors Closed ----------
-
-Elevator State Change [Closing Doors]: DoorsOpen -> DoorsClosed
-...
 
 ## Unit Testing Instructions
 To run the unit tests for the `U_Test` class:
@@ -129,28 +104,7 @@ Add 'JUnit5.8.1' to class path via 💡ContextActions
 3. IntelliJ IDEA will execute all the unit tests in the `U_Test` class, and you can view the results in the Run window.
 
 
-## Iteration 1 Contributions
-- **Jason Zhang 101191526**
-  - `DirectionEnum.java`
-  - `ElevatorSubsystem.java`
-  - `FloorData.java`
-  - `FloorSubsystem.java`
-  - `SchedulerSubsystem.java`
-  - `Synchronizer.java`
-
-- **Caleb Lui-Yee 101187217**
-  - `ThreadMain.java`
-
-- **HaoChen Hou 101077553**
-  - Unit Testing
-
-- **Yahya Khan 101073911**
-  - UML Class Diagram
-  - UML Sequence Diagram
-  - Readme.txt
-
-
-## Iteration 2 Contributions
+## Iteration 4 Contributions
 - **Jason Zhang 101191526**
   - Updated UML Class Diagrams.
   - Refactored System Output.
@@ -161,16 +115,19 @@ Add 'JUnit5.8.1' to class path via 💡ContextActions
 - **Caleb Lui-Yee 101187217**
   - Developed State Diagrams.
   - Initial State Machine Development.
+  - Refactored State Machines alongside Jason Zhang.
 
 - **HaoChen Hou 101077553**
-  - Unit Testing 
+  - Unit Testing.
+  - Test Cases Development alongside Bakri.
 
 - **Yahya Khan 101073911**
-  - Refactored Elevator Subsystem.
-  - Refactored Scheduler Subsystem.
+  - Refactored Elevator Subsystem alongside Jason Zhang and Caleb Lui-Yee.
+  - Refactored Scheduler Subsystem alongside Jason Zhang and Caleb Lui-Yee.
+  - Refactored Floor Subsystem alongside Jason Zhang and Caleb Lui-Yee.
   - Refactored Synchronizer.
   - Updated UML Sequence Diagram.
   - Updated UML Class Diagrams.
-  - Refactored State Machines.
+  - Refactored State Machines alongside Jason Zhang and Caleb Lui-Yee.
   - Updated Readme.
-
+  - Documentation for the entire system.
