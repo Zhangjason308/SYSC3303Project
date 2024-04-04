@@ -4,6 +4,7 @@ import SYSC3303Project.Elevator.StateMachine.ElevatorStateMachine;
 import SYSC3303Project.Floor.FloorData;
 import SYSC3303Project.Floor.StringUtil;
 import SYSC3303Project.SharedDataInterface;
+import SYSC3303Project.SimulatedClockSingleton;
 
 import java.io.IOException;
 import java.net.*;
@@ -45,7 +46,7 @@ public class ElevatorSubsystem implements Runnable {
     private final List<AbstractMap.SimpleEntry<Integer, Integer>> targetFloors =
             Collections.synchronizedList(new ArrayList<>());
     private List<DoorFault> doorFaults = new ArrayList<>();
-
+    private List<HardFault> hardFaults = new ArrayList<>();
 
     private boolean isDoorStuckOpen = false;
     private boolean isDoorStuckClosed = false;
@@ -92,15 +93,21 @@ public class ElevatorSubsystem implements Runnable {
                 doorFaults.stream()
                         .map(fault -> String.format("%s:%d", fault.getFaultType(), fault.getRetryAttempts()))
                         .collect(Collectors.joining(", "));
+        // Convert doorFaults list to a string representation
+        String hardFaultsStr = hardFaults.isEmpty() ? "No Door Faults" :
+                hardFaults.stream()
+                        .map(fault -> String.format("%s:%d", fault.getFaultType()))
+                        .collect(Collectors.joining(", "));
 
         // Construct the full status string including the door faults
-        return String.format("%d,%d,%s,%s,%s,%s",
+        return String.format("%d,%d,%s,%s,%s,%s,%s",
                 id,
                 currentFloor,
                 direction,
                 elevatorStateMachine.getCurrentState().toString(),
                 targetFloorsStr,
-                doorFaultsStr);
+                doorFaultsStr,
+                hardFaultsStr);
     }
 
     // Task for sending and receiving commands
@@ -446,8 +453,18 @@ public class ElevatorSubsystem implements Runnable {
         elevatorStateMachine.setState("Stopped");
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
         System.out.println("ELEVATOR [" + id + "]: Doors Opening " + "----------\n");
+        long startTime = clock.getCurrentTime();
+        if(!doorFaults.isEmpty()){
+            sleep(3000);
+        }
         sleep(3000); // Simulate time for doors opening (3 secs)
-        elevatorStateMachine.setState("DoorsOpen");
+        long endTime = clock.getCurrentTime();
+        if(startTime - endTime >= 6000){
+            handleDoorFaults();
+        }
+        else{
+            elevatorStateMachine.setState("DoorsOpen");
+        }
         // Assume rpcSend is a method that sends the elevator's status somewhere
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
         sleep(5000); // Simulate time for passengers to board (5 secs)
@@ -479,12 +496,20 @@ public class ElevatorSubsystem implements Runnable {
     public int TestWaitingTime = 0;
     private void goUp() throws InterruptedException, UnknownHostException {
         // Simulate the movement up by one floor with acceleration, cruising (if applicable), and deceleration
+        long startTime = clock.getCurrentTime();
         direction = Direction.UP;
         elevatorStateMachine.setState("Moving");
         System.out.println("ELEVATOR [" + id + "]: Moving Up");
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+        if(!hardFaults.isEmpty()){
+            sleep(5000); // Acceleration for half a floor
+        }
         sleep(10000); // Acceleration for half a floor
-        TestWaitingTime += 10000;
+        long endTime = clock.getCurrentTime();
+        if (startTime - endTime >= 15000){
+            handleHardFault(hardFaults.get(0).toString());
+            return;
+        }
 
         currentFloor++; // Successfully moved up by one floor
         System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
@@ -492,16 +517,23 @@ public class ElevatorSubsystem implements Runnable {
     }
 
     private void goDown() throws InterruptedException, UnknownHostException {
-        // Simulate the movement down by one floor with acceleration, cruising (if applicable), and deceleration
+        // Simulate the movement up by one floor with acceleration, cruising (if applicable), and deceleration
+        long startTime = clock.getCurrentTime();
         direction = Direction.DOWN;
-
         elevatorStateMachine.setState("Moving");
         System.out.println("ELEVATOR [" + id + "]: Moving Down");
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+        if(!hardFaults.isEmpty()){
+            sleep(5000); // Acceleration for half a floor
+        }
         sleep(10000); // Acceleration for half a floor
-        TestWaitingTime += 10000;
+        long endTime = clock.getCurrentTime();
+        if (startTime - endTime >= 15000){
+            handleHardFault(hardFaults.get(0).toString());
+            return;
+        }
 
-        currentFloor--; // Successfully moved down by one floor
+        currentFloor--; // Successfully moved up by one floor
         System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
     }
