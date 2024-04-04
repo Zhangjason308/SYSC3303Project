@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  * The Scheduler implements a state machine to keep track of its functions and state.
  */
 public class SchedulerSubsystem implements Runnable {
-    private Synchronizer synchronizer;
+    private ElevatorStatusGUI observer;
 
     private Map<FloorData, SchedulerStateMachine> commandStateMachines = new ConcurrentHashMap<>();
 
@@ -66,6 +66,19 @@ public class SchedulerSubsystem implements Runnable {
             throw new RuntimeException(e);
         }
         //this.elevatorStatusMap = new ArrayList<>();
+    }
+
+    public void setObserver(ElevatorStatusGUI observer) {
+        this.observer = observer;
+    }
+
+    protected void notifyObserver() {
+        if (observer != null) {
+            observer.updateElevatorStatuses(getElevatorStatusMap());
+        }
+    }
+    public Map<Integer, ElevatorStatus> getElevatorStatusMap() {
+        return elevatorStatusMap;
     }
 
     public void addElevatorStatus(String statusString) {
@@ -128,6 +141,7 @@ public class SchedulerSubsystem implements Runnable {
             }
         }
 
+
         List<DoorFault> doorFaults = new ArrayList<>();
 
         // Assuming the door faults are the last part of the status string
@@ -157,6 +171,8 @@ public class SchedulerSubsystem implements Runnable {
         newStatus.setTargetFloors(targetFloors);
         newStatus.setDoorFaults(doorFaults); // Set the parsed door faults
         elevatorStatusMap.put(elevatorId, newStatus);
+        notifyObserver();
+
     }
 
     public void completeCommand(FloorData command) {
@@ -593,25 +609,5 @@ public class SchedulerSubsystem implements Runnable {
         System.out.println("+");
 
 
-    }
-
-
-
-
-
-
-
-
-
-
-    public static void main(String[] args) throws Exception{
-
-        SharedDataImpl sharedData = new SharedDataImpl();
-        LocateRegistry.createRegistry(1099);
-        Naming.rebind("SharedData", sharedData);
-
-        SchedulerSubsystem schedulerSubsystem = new SchedulerSubsystem((sharedData));
-        Thread thread = new Thread(schedulerSubsystem);
-        thread.start();
     }
 }

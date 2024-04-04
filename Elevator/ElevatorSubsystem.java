@@ -57,8 +57,13 @@ public class ElevatorSubsystem implements Runnable {
     public String TestString;
     public String TestMoveTo;
 
+    SimulatedClockSingleton clock;
+
+
 
     public ElevatorSubsystem(SharedDataInterface sharedData, int id) {
+        this.clock = SimulatedClockSingleton.getInstance();
+        clock.getInstance().printCurrentTime();
         this.id = id;
         this.sharedData = sharedData;
         this.elevatorStateMachine = new ElevatorStateMachine();
