@@ -363,7 +363,9 @@ public class ElevatorSubsystem implements Runnable {
 
         while (!processingCompleted) {
             synchronized (targetFloors) {
-                for (AbstractMap.SimpleEntry<Integer, Integer> entry : targetFloors) {
+                Iterator<AbstractMap.SimpleEntry<Integer, Integer>> iterator = targetFloors.iterator();
+                while (iterator.hasNext()) {
+                    AbstractMap.SimpleEntry<Integer, Integer> entry = iterator.next();
                     int destinationFloor = entry.getKey();
                     int arrivalFloor = entry.getValue(); // Assuming elevator is already at currentFloor for now
                     direction = determineDirection(arrivalFloor, destinationFloor);
@@ -383,8 +385,10 @@ public class ElevatorSubsystem implements Runnable {
                     }
 
                     // Additional processing can be done here if needed, such as finalizing the trip
+
+                    // Remove the entry from the list
+                    iterator.remove();
                 }
-                targetFloors.clear(); // Clear the list after processing
             }
 
             // After processing all target floors, set processingCompleted to true
@@ -416,7 +420,7 @@ public class ElevatorSubsystem implements Runnable {
             }
 
             // Check for intermediary stops
-            if (shouldStopAtFloor(currentFloor)) {
+            if (shouldStopAtFloor(currentFloor) != null) {
                 performStopActions();
             }
         }
@@ -425,22 +429,26 @@ public class ElevatorSubsystem implements Runnable {
         performStopActions();
     }
 
-    private boolean shouldStopAtFloor(int floor) {
-        for (AbstractMap.SimpleEntry<Integer, Integer> entry : targetFloors) {
+    private AbstractMap.SimpleEntry<Integer, Integer> shouldStopAtFloor(int floor) {
+        Iterator<AbstractMap.SimpleEntry<Integer, Integer>> iterator = targetFloors.iterator();
+        while (iterator.hasNext()) {
+            AbstractMap.SimpleEntry<Integer, Integer> entry = iterator.next();
             int arrivalFloor = entry.getKey();
             int destinationFloor = entry.getValue();
 
             // For UP direction, check if the elevator is moving towards a request, and the floor is a valid stop
-            if (direction == Direction.UP && floor >= arrivalFloor && floor <= destinationFloor) {
-                return true; // A valid stop found
+            if (direction == Direction.UP && (floor == arrivalFloor && floor < destinationFloor)) {
+                iterator.remove(); // Remove the entry from the list
+                return entry; // A valid stop found
             }
 
             // For DOWN direction, check if the elevator is moving towards a request, and the floor is a valid stop
-            if (direction == Direction.DOWN && floor <= arrivalFloor && floor >= destinationFloor) {
-                return true; // A valid stop found
+            if (direction == Direction.DOWN && (floor <= arrivalFloor && floor > destinationFloor)) {
+                iterator.remove(); // Remove the entry from the list
+                return entry; // A valid stop found
             }
         }
-        return false; // No valid stop found
+        return null; // No valid stop found
     }
 
 
