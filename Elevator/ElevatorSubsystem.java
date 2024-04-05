@@ -366,8 +366,8 @@ public class ElevatorSubsystem implements Runnable {
                 Iterator<AbstractMap.SimpleEntry<Integer, Integer>> iterator = targetFloors.iterator();
                 while (iterator.hasNext()) {
                     AbstractMap.SimpleEntry<Integer, Integer> entry = iterator.next();
-                    int destinationFloor = entry.getKey();
-                    int arrivalFloor = entry.getValue(); // Assuming elevator is already at currentFloor for now
+                    int destinationFloor = entry.getValue();
+                    int arrivalFloor = entry.getKey(); // Assuming elevator is already at currentFloor for now
                     direction = determineDirection(arrivalFloor, destinationFloor);
 
                     // Elevator moves to arrival floor to pickup passengers
@@ -443,7 +443,7 @@ public class ElevatorSubsystem implements Runnable {
             }
 
             // For DOWN direction, check if the elevator is moving towards a request, and the floor is a valid stop
-            if (direction == Direction.DOWN && (floor <= arrivalFloor && floor > destinationFloor)) {
+            if (direction == Direction.DOWN && (floor == arrivalFloor && floor > destinationFloor)) {
                 iterator.remove(); // Remove the entry from the list
                 return entry; // A valid stop found
             }
@@ -497,6 +497,10 @@ public class ElevatorSubsystem implements Runnable {
         sleep(3000); // Simulate time for doors closing (3 secs)
         elevatorStateMachine.setState("DoorsClosed");
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+//        if (targetFloors.isEmpty()) {
+//            elevatorStateMachine.setState("Idle");
+//            rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+//        }
     }
 
 

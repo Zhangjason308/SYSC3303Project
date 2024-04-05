@@ -492,19 +492,34 @@ public class SchedulerSubsystem implements Runnable {
 
     private int chooseElevator(FloorData command) throws RemoteException {
         List<ElevatorStatus> applicableElevators = new ArrayList<>();
+        List<ElevatorStatus> allElevators = new ArrayList<>();
 
         // Collect elevators that meet the criteria
         for (ElevatorStatus status : elevatorStatusMap.values()) {
-            boolean isElevatorMovingCorrectly = (status.getDirection() == Direction.DOWN || status.getDirection() == Direction.STATIONARY) && status.getCurrentFloor() >= command.getArrivalFloor() && command.getArrivalFloor() >= command.getDestinationFloor();
-            boolean isElevatorMovingCorrectlyUp = (status.getDirection() == Direction.UP || status.getDirection() == Direction.STATIONARY) && status.getCurrentFloor() <= command.getArrivalFloor() && command.getArrivalFloor() <= command.getDestinationFloor();
+            boolean isElevatorMovingCorrectly = ((status.getDirection() == command.getDirection() && status.getDirection() == Direction.DOWN)  || status.getDirection() == Direction.STATIONARY) && status.getCurrentFloor() >= command.getArrivalFloor();
+            boolean isElevatorMovingCorrectlyUp = ((status.getDirection() == command.getDirection() && status.getDirection() == Direction.UP) || status.getDirection() == Direction.STATIONARY) && status.getCurrentFloor() <= command.getArrivalFloor();
 
             if (isElevatorMovingCorrectly || isElevatorMovingCorrectlyUp) {
                 applicableElevators.add(status);
             }
+            allElevators.add(status);
         }
 
         // Sort the list of applicable elevators based on some criteria, for example, proximity to the command's arrival floor
-        Collections.sort(applicableElevators, new Comparator<ElevatorStatus>() {
+        applicableElevators.sort(new Comparator<ElevatorStatus>() {
+            @Override
+            public int compare(ElevatorStatus o1, ElevatorStatus o2) {
+                // This example sorts based on proximity to the arrival floor
+                // Adjust according to your specific criteria
+                return Integer.compare(Math.abs(o1.getCurrentFloor() - command.getArrivalFloor()),
+                        Math.abs(o2.getCurrentFloor() - command.getArrivalFloor()));
+            }
+        });
+
+        //matchingElevators.sort(Comparator.comparingInt(e -> Math.abs(e.getCurrentFloor() - command.getArrivalFloor())));
+
+        //sorts allElevators which is chosen if there are no elevators headed in the same direction
+        allElevators.sort(new Comparator<ElevatorStatus>() {
             @Override
             public int compare(ElevatorStatus o1, ElevatorStatus o2) {
                 // This example sorts based on proximity to the arrival floor
@@ -516,29 +531,20 @@ public class SchedulerSubsystem implements Runnable {
 
         if (!applicableElevators.isEmpty()) {
             // Return the id of the first elevator in the sorted list
-            return applicableElevators.get(0).getId();
+            return applicableElevators.getFirst().getId();
         }
 
         // Handle the case where no elevators are applicable
         // This might involve choosing any available elevator or throwing an exception
-        return 10;
+        for(ElevatorStatus es : allElevators){
+            if (es.getDirection() == command.getDirection() || es.getDirection() == Direction.STATIONARY){
+                return es.getId();
+            }
+        }
+        return allElevators.getFirst().getId();
         //throw new IllegalStateException("No applicable elevators found for the command.");
     }
 
-
-    private ArrayList<ElevatorStatus> sorter(ArrayList<ElevatorStatus> elevatorStatus, FloorData command){
-        ArrayList<ElevatorStatus> tempArray = elevatorStatus;
-
-        Collections.sort(tempArray, new Comparator<ElevatorStatus>() {
-            @Override
-            public int compare(ElevatorStatus es1, ElevatorStatus es2) {
-
-                return Integer.compare(Math.abs(es1.getCurrentFloor() - command.getArrivalFloor()), Math.abs(es2.getCurrentFloor() - command.getArrivalFloor()));
-            }
-        });
-
-        return tempArray;
-    }
 
     private synchronized void printAllElevatorStatuses() {
         // Update headers to include "Door Faults"
@@ -607,7 +613,16 @@ public class SchedulerSubsystem implements Runnable {
             }
         }
         System.out.println("+");
+    }
 
+    public static void main(String[] args) throws Exception{
 
+        SharedDataImpl sharedData = new SharedDataImpl();
+        LocateRegistry.createRegistry(1099);
+        Naming.rebind("SharedData", sharedData);
+
+        SchedulerSubsystem schedulerSubsystem = new SchedulerSubsystem((sharedData));
+        Thread thread = new Thread(schedulerSubsystem);
+        thread.start();
     }
 }
