@@ -2,6 +2,7 @@ package SYSC3303Project.Scheduler;
 
 import SYSC3303Project.Elevator.Direction;
 import SYSC3303Project.Elevator.ElevatorStatus;
+import SYSC3303Project.Elevator.StateMachine.ElevatorStateMachine;
 import SYSC3303Project.SharedDataImpl;
 
 import javax.imageio.ImageIO;
@@ -108,7 +109,14 @@ public class ElevatorStatusGUI extends JFrame {
             for (Map.Entry<Integer, ElevatorStatus> entry : elevatorStatusMap.entrySet()) {
                 ElevatorStatus status = entry.getValue();
                 int index = entry.getKey();
-                floorLabels[(index-10)/2].setText(String.valueOf(status.getCurrentFloor()));
+                if(status.getDoorFaults().isEmpty()){
+                    floorLabels[(index-10)/2].setFont(new Font("Serif", Font.BOLD, 20));
+                    floorLabels[(index-10)/2].setText(String.valueOf(status.getCurrentFloor()));
+                }
+                else{
+                    floorLabels[(index-10)/2].setFont(new Font("Serif", Font.BOLD, 10));
+                    floorLabels[(index-10)/2].setText(status.getDoorFaults().get(0).getFaultType());
+                }
 
                 // Set direction label using Unicode arrows
                 if (status.getDirection() == Direction.UP) {
