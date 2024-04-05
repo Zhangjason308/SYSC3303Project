@@ -75,10 +75,18 @@ public class ElevatorSubsystem implements Runnable {
             System.out.println("ELEVATOR [" + id + "]: SENDING PACKETS ON PORT: " + sendSocket.getLocalPort());
             this.receiveSocket = new DatagramSocket(id + 1);
             System.out.println("ELEVATOR [" + id + "]: RECEIVING PACKETS ON PORT: " + receiveSocket.getLocalPort());
+            sendStatusUpdate();
         }
         catch (SocketException se){
             se.printStackTrace();
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
         }
+    }
+
+    private void sendStatusUpdate() throws UnknownHostException {
+        String status = getElevatorStatus();
+        rpcSend(status, sendSocket, InetAddress.getLocalHost(), id + 10); // Assuming the Scheduler is listening on id+10
     }
 
     public String getElevatorStatus() {
@@ -124,19 +132,10 @@ public class ElevatorSubsystem implements Runnable {
 
 
     public void sendAndReceive() throws UnknownHostException, InterruptedException {
-        int attempt = 0;
-        boolean receivedResponse = false;
-        boolean sentStatus = false;
         handleDoorFaults();
-        while (attempt < 1 && !receivedResponse) {
-            if (!sentStatus) {
-                rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id + 10);
-                sentStatus = true;
-            }
             try {
                 // Assuming rpcReceive is now correctly designed to return a FloorData object
                 String rawData = rpcReceive(receiveSocket, new DatagramPacket(new byte[1024], 1024), 1024);
-                receivedResponse = true;
 
                 if (rawData.contains("DOOR_FAULT")) {
                     // Handle the fault
@@ -145,9 +144,9 @@ public class ElevatorSubsystem implements Runnable {
                     System.out.println("---------- ELEVATOR [" + id + "]: Received Door Fault: " + rawData + " ----------\n");
                     rpcSend("DOOR_FAULT RECEIVED", sendSocket, InetAddress.getLocalHost(), id + 10);
                 } else {
-                    System.out.println("---------- ELEVATOR [" + id + "]: Received  Command: " + command + " ----------\n");
-
                     FloorData command = convertStringToFloorData(rawData);
+                    System.out.println("---------- ELEVATOR [" + id + "]: Received Command: " + command + " ----------\n");
+
 
                     TestTime = command.getTime();
                     TestArrivalFloor = command.getArrivalFloor();
@@ -159,19 +158,14 @@ public class ElevatorSubsystem implements Runnable {
                         targetFloors.add(new AbstractMap.SimpleEntry<>(command.getArrivalFloor(), command.getDestinationFloor()));
                     }
                     TestString = "---------- ELEVATOR [" + id + "]: Received Command: " + command + " ----------\n";
-                    System.out.println("---------- ELEVATOR [" + id + "]: Received Command: " + command + " ----------\n");
                     //processCommand(command);
                     // Indicate command received
-                    rpcSend("200", sendSocket, InetAddress.getLocalHost(), 6);
+                    //rpcSend("200", sendSocket, InetAddress.getLocalHost(), 6);
+                    sendStatusUpdate();
                 }
             } catch (SocketTimeoutException ste) {
-                attempt++;
-            }
         }
 
-        if (!receivedResponse) {
-            System.out.println("ELEVATOR [" + id + "]: No request from Scheduler");
-        }
     }
 
     private FloorData convertStringToFloorData(String rawData) {
@@ -323,7 +317,7 @@ public class ElevatorSubsystem implements Runnable {
         packet = new DatagramPacket(data, data.length);
 
         try {
-            socket.setSoTimeout(5000);
+            socket.setSoTimeout(2000);
             socket.receive(packet);
         } catch (IOException e) {
             throw new SocketTimeoutException();

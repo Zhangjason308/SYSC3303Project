@@ -105,14 +105,23 @@ public class FloorSubsystem implements Runnable {
 
 
     public void receiveAcks() {
+        int timeoutCounter = 0; // Initialize a counter for timeouts
+
         while (true) {
             try {
                 rpcReceive(sendAndReceiveSocket, receivePacket, 3);
+                timeoutCounter = 0; // Reset the counter on successful receive
             } catch (SocketTimeoutException ste) {
-                System.out.println(Thread.currentThread().getName() + ": Timeout. Resending packet.");
+                System.out.println(Thread.currentThread().getName() + ": Timeout. Attempting to resend packet.");
+                timeoutCounter++; // Increment the counter on timeout
+                if (timeoutCounter > 5) {
+                    System.out.println("Timeout occurred more than 5 times in a row. Exiting the program.");
+                    System.exit(1); // Exit the program
+                }
             }
         }
     }
+
 
 //    public long parseTimeToSeconds(String timeStr) {
 //        String[] hms = timeStr.split("[:.]");
