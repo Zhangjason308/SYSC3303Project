@@ -268,10 +268,10 @@ public class SchedulerSubsystem implements Runnable {
 
                         // Here, we set the target floor pair for the chosen elevator
                         ElevatorStatus chosenElevatorStatus = elevatorStatusMap.get(elevatorId);
-                        if (chosenElevatorStatus != null) {
-                            chosenElevatorStatus.addTargetFloorPair(floorData.getArrivalFloor(), floorData.getDestinationFloor());
-                            elevatorStatusMap.put(elevatorId, chosenElevatorStatus); // Update the map with the modified ElevatorStatus
-                        }
+//                        if (chosenElevatorStatus != null) {
+//                            chosenElevatorStatus.addTargetFloorPair(floorData.getArrivalFloor(), floorData.getDestinationFloor());
+//                            elevatorStatusMap.put(elevatorId, chosenElevatorStatus); // Update the map with the modified ElevatorStatus
+//                        }
                         System.out.println("Sending COMMAND to Elevator " + elevatorId + ": " + command);
 
                         //checkElevatorAndTransitionState(chosenElevatorStatus, floorData);

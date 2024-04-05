@@ -11,7 +11,11 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.rmi.Naming;
 import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 
 import static java.lang.Thread.sleep;
 
@@ -43,8 +47,10 @@ public class ElevatorSubsystem implements Runnable {
     private FloorData command = null;
 
     private int id;
-    private final List<AbstractMap.SimpleEntry<Integer, Integer>> targetFloors =
-            Collections.synchronizedList(new ArrayList<>());
+    //private final CopyOnWriteArrayList<AbstractMap.SimpleEntry<Integer, Integer>> targetFloors = new CopyOnWriteArrayList<>();
+
+    private final BlockingQueue<Map<Integer, Integer>> targetFloors = new LinkedBlockingQueue<>();
+
     private List<DoorFault> doorFaults = new ArrayList<>();
     private List<HardFault> hardFaults = new ArrayList<>();
 
@@ -64,7 +70,7 @@ public class ElevatorSubsystem implements Runnable {
 
     public ElevatorSubsystem(SharedDataInterface sharedData, int id) {
         this.clock = SimulatedClockSingleton.getInstance();
-        clock.getInstance().printCurrentTime();
+        clock.printCurrentTime();
         this.id = id;
         this.sharedData = sharedData;
         this.elevatorStateMachine = new ElevatorStateMachine();
@@ -90,11 +96,20 @@ public class ElevatorSubsystem implements Runnable {
     }
 
     public String getElevatorStatus() {
-        // Convert target floors list to a string representation
-        String targetFloorsStr = targetFloors.isEmpty() ? "None" :
-                targetFloors.stream()
-                        .map(pair -> String.format("(%d->%d)", pair.getKey(), pair.getValue()))
-                        .collect(Collectors.joining("+"));
+        StringBuilder targetFloorsStr = new StringBuilder();
+        targetFloors.forEach(commandMap -> {
+            commandMap.forEach((arrivalFloor, destinationFloor) -> {
+                if (targetFloorsStr.length() > 0) {
+                    targetFloorsStr.append("+");
+                }
+                targetFloorsStr.append(String.format("(%d->%d)", arrivalFloor, destinationFloor));
+            });
+        });
+
+        // Handle case where there are no commands in the queue
+        if (targetFloorsStr.length() == 0) {
+            targetFloorsStr.append("None");
+        }
 
         // Convert doorFaults list to a string representation
         String doorFaultsStr = doorFaults.isEmpty() ? "No Door Faults" :
@@ -120,53 +135,49 @@ public class ElevatorSubsystem implements Runnable {
 
     // Task for sending and receiving commands
     private Runnable sendAndReceiveTask = () -> {
-        try {
-            // Continuously send and receive commands
-            while (!Thread.currentThread().isInterrupted()) {
-                sendAndReceive();
-            }
-        } catch (InterruptedException | UnknownHostException e) {
-            e.printStackTrace();
+        // Continuously send and receive commands
+        while (!Thread.currentThread().isInterrupted()) {
+            //sendAndReceive();
         }
     };
 
 
-    public void sendAndReceive() throws UnknownHostException, InterruptedException {
-        handleDoorFaults();
-            try {
-                // Assuming rpcReceive is now correctly designed to return a FloorData object
-                String rawData = rpcReceive(receiveSocket, new DatagramPacket(new byte[1024], 1024), 1024);
-
-                if (rawData.contains("DOOR_FAULT")) {
-                    // Handle the fault
-                    injectDoorFault(rawData);
-                    TestString = "---------- ELEVATOR [" + id + "]: Received Door Fault: " + rawData + " ----------\n";
-                    System.out.println("---------- ELEVATOR [" + id + "]: Received Door Fault: " + rawData + " ----------\n");
-                    rpcSend("DOOR_FAULT RECEIVED", sendSocket, InetAddress.getLocalHost(), id + 10);
-                } else {
-                    FloorData command = convertStringToFloorData(rawData);
-                    System.out.println("---------- ELEVATOR [" + id + "]: Received Command: " + command + " ----------\n");
-
-
-                    TestTime = command.getTime();
-                    TestArrivalFloor = command.getArrivalFloor();
-                    TestDirection = command.getDirection();
-                    TestDestinationFloor = command.getDestinationFloor();
-
-                    // Add to targetFloors list upon receiving a valid command
-                    synchronized (this) {
-                        targetFloors.add(new AbstractMap.SimpleEntry<>(command.getArrivalFloor(), command.getDestinationFloor()));
-                    }
-                    TestString = "---------- ELEVATOR [" + id + "]: Received Command: " + command + " ----------\n";
-                    //processCommand(command);
-                    // Indicate command received
-                    //rpcSend("200", sendSocket, InetAddress.getLocalHost(), 6);
-                    sendStatusUpdate();
-                }
-            } catch (SocketTimeoutException ste) {
-        }
-
-    }
+//    public void sendAndReceive() throws UnknownHostException, InterruptedException {
+//        handleDoorFaults();
+//            try {
+//                // Assuming rpcReceive is now correctly designed to return a FloorData object
+//                String rawData = rpcReceive(receiveSocket, new DatagramPacket(new byte[1024], 1024), 1024);
+//
+//                if (rawData.contains("DOOR_FAULT")) {
+//                    // Handle the fault
+//                    injectDoorFault(rawData);
+//                    TestString = "---------- ELEVATOR [" + id + "]: Received Door Fault: " + rawData + " ----------\n";
+//                    System.out.println("---------- ELEVATOR [" + id + "]: Received Door Fault: " + rawData + " ----------\n");
+//                    rpcSend("DOOR_FAULT RECEIVED", sendSocket, InetAddress.getLocalHost(), id + 10);
+//                } else {
+//                    FloorData command = convertStringToFloorData(rawData);
+//                    System.out.println("---------- ELEVATOR [" + id + "]: Received Command: " + command + " ----------\n");
+//
+//
+//                    TestTime = command.getTime();
+//                    TestArrivalFloor = command.getArrivalFloor();
+//                    TestDirection = command.getDirection();
+//                    TestDestinationFloor = command.getDestinationFloor();
+//
+//                    // Add to targetFloors list upon receiving a valid command
+//                    synchronized (this) {
+//                        targetFloors.add(new AbstractMap.SimpleEntry<>(command.getArrivalFloor(), command.getDestinationFloor()));
+//                    }
+//                    TestString = "---------- ELEVATOR [" + id + "]: Received Command: " + command + " ----------\n";
+//                    //processCommand(command);
+//                    // Indicate command received
+//                    //rpcSend("200", sendSocket, InetAddress.getLocalHost(), 6);
+//                    sendStatusUpdate();
+//                }
+//            } catch (SocketTimeoutException ste) {
+//        }
+//
+//    }
 
     private FloorData convertStringToFloorData(String rawData) {
         try {
@@ -287,27 +298,99 @@ public class ElevatorSubsystem implements Runnable {
 
     private final Object lock = new Object(); // Object used for synchronization
 
+    @Override
     public void run() {
-        // Start the thread for sending and receiving commands
-        Thread sendAndReceiveThread = new Thread(sendAndReceiveTask);
-        sendAndReceiveThread.start();
+        Thread commandReceiver = new Thread(this::receiveCommands);
+        commandReceiver.start();
 
-        while (!Thread.currentThread().isInterrupted()) {
-            synchronized (lock) {
-                // Process the received command
+        Thread commandProcessor = new Thread(this::processCommands);
+        commandProcessor.start();
+
+        try {
+            commandReceiver.join();
+            commandProcessor.join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private void receiveCommands() {
+        new Thread(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
                 try {
-
-                    processCommands();
-                    sleep(1000);
-                } catch (InterruptedException | UnknownHostException e) {
-                    System.out.println("---------- ELEVATOR [" + id + "] SUBSYSTEM INTERRUPTED ---------- ");
-                    Thread.currentThread().interrupt();
-                    return;
+                    // Assuming rpcReceive is now designed to return a String representing the command
+                    String rawData = rpcReceive(receiveSocket, new DatagramPacket(new byte[1024], 1024), 1024);
+                    if (rawData != null && !rawData.isEmpty()) {
+                        FloorData command = convertStringToFloorData(rawData);
+                        if (command != null) {
+                            // Map the arrival floor to the destination floor
+                            Map<Integer, Integer> commandMap = Collections.singletonMap(command.getArrivalFloor(), command.getDestinationFloor());
+                            targetFloors.put(commandMap);
+                            System.out.println("Received and queued command: " + command);
+                        }
+                    }
+                } catch (SocketTimeoutException ste) {
+                    // Expected if there's no incoming command; can choose to log or silently ignore
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt(); // Restore the interrupted status
+                    System.out.println("Interrupted while receiving commands.");
+                } catch (IOException e) {
+                    System.err.println("IOException in receiveCommands: " + e.getMessage());
+                    e.printStackTrace();
                 }
-
-                // Reset command to null
-                command = null;
             }
+        }, "ReceiveCommandsThread").start();
+    }
+
+//    public void run() {
+//        // Start the thread for sending and receiving commands
+//        try {
+//            sendStatusUpdate();
+//        } catch (UnknownHostException e) {
+//            throw new RuntimeException(e);
+//        }
+//
+//        while (!Thread.currentThread().isInterrupted()) {
+//
+//                // Process the received command
+//                try {
+//                    command = attemptReceiveCommand();
+//                    if (command != null) {
+//                        System.out.println("Received Command: " + command);
+//                        targetFloors.add(new AbstractMap.SimpleEntry<>(command.getArrivalFloor(), command.getDestinationFloor()));
+//                        // Process the received command
+//                        processCommands();
+//                        // Reset command to null after processing
+//                        command = null;
+//                    }
+//                } catch (InterruptedException | UnknownHostException e) {
+//                    System.out.println("---------- ELEVATOR [" + id + "] SUBSYSTEM INTERRUPTED ---------- ");
+//                    Thread.currentThread().interrupt();
+//                    return;
+//                } catch (IOException e) {
+//                    throw new RuntimeException(e);
+//                }
+//            try {
+//                Thread.sleep(1000);
+//            } catch (InterruptedException e) {
+//                throw new RuntimeException(e);
+//            }
+//
+//            // Reset command to null
+//                command = null;
+//
+//        }
+//    }
+
+    private FloorData attemptReceiveCommand() throws IOException {
+        DatagramPacket packet = new DatagramPacket(new byte[1024], 1024);
+        try {
+            receiveSocket.setSoTimeout(100); // Set a short timeout to make the receive non-blocking
+            String rawData = rpcReceive(receiveSocket, new DatagramPacket(new byte[1024], 1024), 1024);
+            return convertStringToFloorData(rawData); // Assuming this method exists and parses the raw data
+        } catch (SocketTimeoutException e) {
+            // Expected if there's no data to receive
+            return null;
         }
     }
 
@@ -324,7 +407,9 @@ public class ElevatorSubsystem implements Runnable {
         }
         // Assuming StringUtil.getStringFormat converts byte data to a String
         String receivedData = StringUtil.getStringFormat(packet.getData(), packet.getLength());
+        clock.printCurrentTime();
         System.out.println(Thread.currentThread().getName() + ": Packet Received From Scheduler: " + receivedData);
+        String name = Thread.currentThread().getName();
         return receivedData; // Return the raw data as String
     }
 
@@ -341,7 +426,8 @@ public class ElevatorSubsystem implements Runnable {
             socket.send(packet);
 
             // Log the action
-            System.out.println("ELEVATOR [" + id + "]: Packet Sent To Scheduler: " + StringUtil.getStringFormat(packet));
+            clock.printCurrentTime();
+            System.out.println( "ELEVATOR [" + id + "]: Packet Sent To Scheduler: " + StringUtil.getStringFormat(packet));
         } catch (IOException e) {
             System.err.println("ELEVATOR [" + id + "]: IOException in sendFloorData: " + e.getMessage());
             e.printStackTrace();
@@ -350,43 +436,76 @@ public class ElevatorSubsystem implements Runnable {
 
 
 
-    public void processCommands() throws InterruptedException, UnknownHostException {
-        System.out.println("---------- ELEVATOR [" + id + "]: Processing Commands ----------\n");
+//    public void processCommands() throws InterruptedException, UnknownHostException {
+//        System.out.println("---------- ELEVATOR [" + id + "]: Processing Commands ----------\n");
+//
+//        boolean processingCompleted = false;
+//
+//        while (!processingCompleted) {
+//            // Direct iteration on CopyOnWriteArrayList is safe from ConcurrentModificationException
+//            for (AbstractMap.SimpleEntry<Integer, Integer> entry : targetFloors) {
+//                int destinationFloor = entry.getValue();
+//                int arrivalFloor = entry.getKey(); // Assuming elevator is already at currentFloor for now
+//                direction = determineDirection(arrivalFloor, destinationFloor);
+//
+//                // Elevator moves to arrival floor to pick up passengers
+//                if (arrivalFloor != currentFloor) {
+//                    moveToFloor(arrivalFloor);
+//                } else {
+//                    TestMoveTo = "---------- ELEVATOR [" + id + "]: Already at floor " + currentFloor + " ----------\n";
+//                    System.out.println("---------- ELEVATOR [" + id + "]: Already at floor " + currentFloor + " ----------\n");
+//                    performStopActions(); // For opening and closing doors
+//                }
+//
+//                // Move to the destination floor if it's different from the arrival floor
+//                if (destinationFloor != currentFloor) {
+//                    moveToFloor(destinationFloor);
+//                }
+//
+//                // The entry can be safely removed after its use
+//                targetFloors.remove(entry);
+//            }
+//
+//            // After processing all target floors, exit the loop
+//            if (targetFloors.isEmpty()) {
+//                processingCompleted = true;
+//            }
+//        }
+//    }
 
-        boolean processingCompleted = false;
+    private void processCommands() {
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                // Take the next command from the queue, blocking if necessary
+                // Take the next command from the queue, blocking if necessary
+                Map<Integer, Integer> command = targetFloors.take();
+                // Assuming there's only one entry per Map for simplicity
+                Map.Entry<Integer, Integer> entry = command.entrySet().iterator().next();
+                int arrivalFloor = entry.getKey();
+                int destinationFloor = entry.getValue();
+                direction = determineDirection(arrivalFloor, destinationFloor);
 
-        while (!processingCompleted) {
-            synchronized (targetFloors) {
-                Iterator<AbstractMap.SimpleEntry<Integer, Integer>> iterator = targetFloors.iterator();
-                while (iterator.hasNext()) {
-                    AbstractMap.SimpleEntry<Integer, Integer> entry = iterator.next();
-                    int destinationFloor = entry.getValue();
-                    int arrivalFloor = entry.getKey(); // Assuming elevator is already at currentFloor for now
-                    direction = determineDirection(arrivalFloor, destinationFloor);
-
-                    // Elevator moves to arrival floor to pickup passengers
-                    if (arrivalFloor != currentFloor) {
-                        moveToFloor(arrivalFloor);
-                    } else {
-                        TestMoveTo = "---------- ELEVATOR [" + id + "]: Already at floor " + currentFloor + " ----------\n";
-                        System.out.println("---------- ELEVATOR [" + id + "]: Already at floor " + currentFloor + " ----------\n");
-                        performStopActions(); // Use performStopActions for opening and closing doors
-                    }
-
-                    // Now move to the destination floor if it's different from the arrival floor
-                    if (destinationFloor != currentFloor) {
-                        moveToFloor(destinationFloor);
-                    }
-
-                    // Additional processing can be done here if needed, such as finalizing the trip
-
-                    // Remove the entry from the list
-                    iterator.remove();
+                // Handle moving to the arrival floor to pick up passengers
+                if (arrivalFloor != currentFloor) {
+                    moveToFloor(arrivalFloor);
+                } else {
+                    System.out.println("ELEVATOR [" + id + "]: Already at floor " + currentFloor);
+                    // Simulate actions performed when stopped at a floor
+                    performStopActions();
                 }
-            }
 
-            // After processing all target floors, set processingCompleted to true
-            processingCompleted = true;
+                // Now, move to the destination floor if it's different from the arrival floor
+                if (destinationFloor != currentFloor) {
+                    moveToFloor(destinationFloor);
+                }
+
+            } catch (InterruptedException e) {
+                // Restore the interrupted status
+                Thread.currentThread().interrupt();
+            } catch (Exception e) {
+                // Log and handle any other exceptions appropriately
+                e.printStackTrace();
+            }
         }
     }
 
@@ -424,26 +543,45 @@ public class ElevatorSubsystem implements Runnable {
     }
 
     private AbstractMap.SimpleEntry<Integer, Integer> shouldStopAtFloor(int floor) {
-        Iterator<AbstractMap.SimpleEntry<Integer, Integer>> iterator = targetFloors.iterator();
-        while (iterator.hasNext()) {
-            AbstractMap.SimpleEntry<Integer, Integer> entry = iterator.next();
-            int arrivalFloor = entry.getKey();
-            int destinationFloor = entry.getValue();
+        // Temporarily store commands that are not related to the current stop
+        List<Map<Integer, Integer>> tempCommands = new ArrayList<>();
 
-            // For UP direction, check if the elevator is moving towards a request, and the floor is a valid stop
-            if (direction == Direction.UP && (floor == arrivalFloor && floor < destinationFloor)) {
-                iterator.remove(); // Remove the entry from the list
-                return entry; // A valid stop found
+        Map<Integer, Integer> stopCommand = null;
+
+        // Drain the queue to process commands
+        targetFloors.drainTo(tempCommands);
+
+        for (Map<Integer, Integer> command : tempCommands) {
+            for (Map.Entry<Integer, Integer> entry : command.entrySet()) {
+                int arrivalFloor = entry.getKey();
+                int destinationFloor = entry.getValue();
+                // Check if the elevator should stop at the current floor
+                if (floor == arrivalFloor || floor == destinationFloor) {
+                    stopCommand = command;
+                    break;
+                }
             }
-
-            // For DOWN direction, check if the elevator is moving towards a request, and the floor is a valid stop
-            if (direction == Direction.DOWN && (floor == arrivalFloor && floor > destinationFloor)) {
-                iterator.remove(); // Remove the entry from the list
-                return entry; // A valid stop found
+            if (stopCommand != null) {
+                break;
             }
         }
-        return null; // No valid stop found
+
+        // Re-add the commands that are not related to the current stop back to the queue
+        for (Map<Integer, Integer> command : tempCommands) {
+            if (command != stopCommand) {
+                targetFloors.offer(command);
+            }
+        }
+
+        // Convert stopCommand to SimpleEntry if it's not null, indicating a stop is needed
+        if (stopCommand != null) {
+            Map.Entry<Integer, Integer> entry = stopCommand.entrySet().iterator().next();
+            return new AbstractMap.SimpleEntry<>(entry.getKey(), entry.getValue());
+        }
+
+        return null; // No stop at this floor
     }
+
 
 
 
@@ -471,22 +609,20 @@ public class ElevatorSubsystem implements Runnable {
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
         sleep(5000); // Simulate time for passengers to board (5 secs)
 
-        // Remove passengers whose destination is the current floor and whose travel direction matches the elevator's direction
-        targetFloors.removeIf(entry -> {
-            int arrivalFloor = entry.getKey();
-            int destinationFloor = entry.getValue();
+        List<Map<Integer, Integer>> toRequeue = new ArrayList<>();
+        targetFloors.forEach(command -> {
+            int arrivalFloor = command.keySet().iterator().next();
+            int destinationFloor = command.values().iterator().next();
 
-            // For UP direction, only remove if the elevator is going from a lower to a higher floor
-            // and the current floor matches their destination floor
-            boolean removeForUp = direction == Direction.UP && arrivalFloor < destinationFloor && destinationFloor == currentFloor;
-
-            // For DOWN direction, only remove if the elevator is going from a higher to a lower floor
-            // and the current floor matches their destination floor
-            boolean removeForDown = direction == Direction.DOWN && arrivalFloor > destinationFloor && destinationFloor == currentFloor;
-
-            return removeForUp || removeForDown;
+            // Check and re-queue commands that are not for the current floor or do not match the elevator's current direction
+            if (!matchesCurrentStop(arrivalFloor, destinationFloor)) {
+                toRequeue.add(command);
+            }
         });
 
+        // Clear the queue and re-queue commands that are not processed in this stop action
+        targetFloors.clear();
+        toRequeue.forEach(targetFloors::offer);
         System.out.println("ELEVATOR [" + id + "]: Doors Closing " + "----------\n");
         sleep(3000); // Simulate time for doors closing (3 secs)
         elevatorStateMachine.setState("DoorsClosed");
@@ -495,6 +631,14 @@ public class ElevatorSubsystem implements Runnable {
 //            elevatorStateMachine.setState("Idle");
 //            rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
 //        }
+    }
+    private boolean matchesCurrentStop(int arrivalFloor, int destinationFloor) {
+        boolean isArrival = arrivalFloor == currentFloor;
+        boolean isDestination = destinationFloor == currentFloor;
+        boolean directionMatches = (direction == Direction.UP && currentFloor < destinationFloor) ||
+                (direction == Direction.DOWN && currentFloor > destinationFloor);
+
+        return (isArrival || isDestination) && directionMatches;
     }
 
 
