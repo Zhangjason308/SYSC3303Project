@@ -11,10 +11,8 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.rmi.Naming;
 import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 
 import static java.lang.Thread.sleep;
@@ -295,6 +293,7 @@ public class ElevatorSubsystem implements Runnable {
 
 
 
+    private final Semaphore commandAvailable = new Semaphore(0);
 
     private final Object lock = new Object(); // Object used for synchronization
 
@@ -327,6 +326,7 @@ public class ElevatorSubsystem implements Runnable {
                             Map<Integer, Integer> commandMap = Collections.singletonMap(command.getArrivalFloor(), command.getDestinationFloor());
                             targetFloors.put(commandMap);
                             System.out.println("Received and queued command: " + command);
+                            commandAvailable.release(); // Signal that a command is available
                         }
                     }
                 } catch (SocketTimeoutException ste) {
@@ -473,41 +473,66 @@ public class ElevatorSubsystem implements Runnable {
 //        }
 //    }
 
+    //private final BlockingQueue<Map<Integer, Integer>> commandQueue = new LinkedBlockingQueue<>();
+    // Track in-transit state for commands
+
     private void processCommands() {
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                // Take the next command from the queue, blocking if necessary
-                // Take the next command from the queue, blocking if necessary
-                Map<Integer, Integer> command = targetFloors.take();
-                // Assuming there's only one entry per Map for simplicity
-                Map.Entry<Integer, Integer> entry = command.entrySet().iterator().next();
-                int arrivalFloor = entry.getKey();
-                int destinationFloor = entry.getValue();
-                direction = determineDirection(arrivalFloor, destinationFloor);
+                Map<Integer, Integer> commandMap = null;
 
-                // Handle moving to the arrival floor to pick up passengers
-                if (arrivalFloor != currentFloor) {
-                    moveToFloor(arrivalFloor);
+                // Wait for a new command if necessary
+                commandAvailable.acquire();
+
+                // Synchronize access to the command queue
+                synchronized (lock) {
+                    commandMap = targetFloors.peek(); // Look at the next command without removing it
+                }
+
+                if (commandMap != null) {
+                    // Extracting the only entry in the map
+                    Map.Entry<Integer, Integer> commandEntry = commandMap.entrySet().iterator().next();
+                    int arrivalFloor = commandEntry.getKey();
+                    int destinationFloor = commandEntry.getValue();
+
+                    // Move to the arrival floor if not already there
+                    if (currentFloor != arrivalFloor) {
+                        moveToFloor(arrivalFloor);
+                    }
+
+                    // Once at the arrival floor, check if we also need to move to the destination floor
+                    if (currentFloor != destinationFloor) {
+                        moveToFloor(destinationFloor);
+                    }
+
+                    // After reaching the destination floor, complete the command's processing
+                    if (currentFloor == destinationFloor) {
+                        synchronized (lock) {
+                            // Confirm the command to remove matches the one intended, to avoid race conditions
+                            Map<Integer, Integer> confirmedCommandMap = targetFloors.peek();
+                            if (confirmedCommandMap != null && confirmedCommandMap.equals(commandMap)) {
+                                System.out.println("------------------0-------------------");
+                                performStopActions(); // Actions to take at destination floor
+                                targetFloors.poll(); // Removes the command as it's completed
+                                rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
+                            }
+                        }
+                    }
                 } else {
-                    System.out.println("ELEVATOR [" + id + "]: Already at floor " + currentFloor);
-                    // Simulate actions performed when stopped at a floor
-                    performStopActions();
+                    // Optionally sleep to avoid busy waiting
+                    Thread.sleep(100);
                 }
-
-                // Now, move to the destination floor if it's different from the arrival floor
-                if (destinationFloor != currentFloor) {
-                    moveToFloor(destinationFloor);
-                }
-
             } catch (InterruptedException e) {
-                // Restore the interrupted status
-                Thread.currentThread().interrupt();
+                Thread.currentThread().interrupt(); // Restore the interrupted status
+                break; // Exit the loop if the thread is interrupted
             } catch (Exception e) {
-                // Log and handle any other exceptions appropriately
-                e.printStackTrace();
+                e.printStackTrace(); // Handle other exceptions appropriately
             }
         }
     }
+
+
+
 
 
     public Direction determineDirection(int currentFloor, int destinationFloor) {
@@ -534,53 +559,120 @@ public class ElevatorSubsystem implements Runnable {
 
             // Check for intermediary stops
             if (shouldStopAtFloor(currentFloor) != null) {
+                System.out.println("------------------1-------------------");
                 performStopActions();
             }
         }
         TestMoveFromTo.add(currentFloor);
         // Perform actions at the destination floor
+        System.out.println("------------------2-------------------");
         performStopActions();
     }
 
-    private AbstractMap.SimpleEntry<Integer, Integer> shouldStopAtFloor(int floor) {
-        // Temporarily store commands that are not related to the current stop
+    private List<AbstractMap.SimpleEntry<Integer, Integer>> shouldStopAtFloor(int floor) {
+        // Temporary storage for commands not related to the current stop
         List<Map<Integer, Integer>> tempCommands = new ArrayList<>();
-
-        Map<Integer, Integer> stopCommand = null;
+        List<Map<Integer, Integer>> commandsForStop = new ArrayList<>();
+        int earliestDestinationFloor = Integer.MAX_VALUE;
+        boolean isArrivalFloorStop = false;
 
         // Drain the queue to process commands
         targetFloors.drainTo(tempCommands);
 
+        // Identify if there's a need to stop at the current floor as an arrival or destination floor
         for (Map<Integer, Integer> command : tempCommands) {
             for (Map.Entry<Integer, Integer> entry : command.entrySet()) {
                 int arrivalFloor = entry.getKey();
                 int destinationFloor = entry.getValue();
-                // Check if the elevator should stop at the current floor
-                if (floor == arrivalFloor || floor == destinationFloor) {
-                    stopCommand = command;
-                    break;
+
+                // Determine if the current floor is an arrival floor
+                if (floor == arrivalFloor) {
+                    isArrivalFloorStop = true;
+                    commandsForStop.add(command);
+                    break; // Stop further checks if the current floor is an arrival floor
+                }
+
+                // For destination floor, find the earliest one
+                if (floor == destinationFloor && destinationFloor <= earliestDestinationFloor) {
+                    earliestDestinationFloor = destinationFloor;
+                    commandsForStop.add(command);
                 }
             }
-            if (stopCommand != null) {
-                break;
-            }
+
+            if (isArrivalFloorStop) break; // If stopping for an arrival floor, no need to check further
         }
 
-        // Re-add the commands that are not related to the current stop back to the queue
+        // Re-queue commands that do not require stopping at the current floor
         for (Map<Integer, Integer> command : tempCommands) {
-            if (command != stopCommand) {
+            if (!commandsForStop.contains(command)) {
+                targetFloors.offer(command);
+            } else if (isArrivalFloorStop && floor != earliestDestinationFloor) {
+                // If the stop is not for an arrival floor or the earliest destination, re-queue it
                 targetFloors.offer(command);
             }
         }
+        List<AbstractMap.SimpleEntry<Integer, Integer>> entriesForStop = new ArrayList<>();
 
-        // Convert stopCommand to SimpleEntry if it's not null, indicating a stop is needed
-        if (stopCommand != null) {
-            Map.Entry<Integer, Integer> entry = stopCommand.entrySet().iterator().next();
-            return new AbstractMap.SimpleEntry<>(entry.getKey(), entry.getValue());
+        // If a stop is required, return the corresponding entry
+        if (!commandsForStop.isEmpty()) {
+            for (Map<Integer, Integer> command : commandsForStop) {
+                Map.Entry<Integer, Integer> entry = command.entrySet().iterator().next();
+                entriesForStop.add(new AbstractMap.SimpleEntry<>(entry.getKey(), entry.getValue()));
+            }
+            return entriesForStop; // Return the list of stopping points
+
         }
 
         return null; // No stop at this floor
     }
+
+
+
+//    private AbstractMap.SimpleEntry<Integer, Integer> shouldStopAtFloor(int floor) {
+//        // Temporarily store commands that are not related to the current stop
+//        List<Map<Integer, Integer>> tempCommands = new ArrayList<>();
+//
+//        Map<Integer, Integer> stopCommand = null;
+//
+//        // Drain the queue to process commands
+//        targetFloors.drainTo(tempCommands);
+//        boolean isDestination = false;
+//
+//        for (Map<Integer, Integer> command : tempCommands) {
+//            for (Map.Entry<Integer, Integer> entry : command.entrySet()) {
+//                isDestination = false;
+//
+//                int arrivalFloor = entry.getKey();
+//                int destinationFloor = entry.getValue();
+//                // Check if the elevator should stop at the current floor
+//                if (floor == arrivalFloor || floor == destinationFloor) {
+//                    if (floor == destinationFloor) {
+//                        isDestination = true;
+//                    }
+//                    stopCommand = command;
+//                    break;
+//                }
+//            }
+//            if (stopCommand != null) {
+//                break;
+//            }
+//        }
+//
+//        // Re-add the commands that are not related to the current stop back to the queue
+//        for (Map<Integer, Integer> command : tempCommands) {
+//            if (command != stopCommand || (command == stopCommand && !isDestination)) {
+//                targetFloors.offer(command);
+//            }
+//        }
+//
+//        // Convert stopCommand to SimpleEntry if it's not null, indicating a stop is needed
+//        if (stopCommand != null && !isDestination) {
+//            Map.Entry<Integer, Integer> entry = stopCommand.entrySet().iterator().next();
+//            return new AbstractMap.SimpleEntry<>(entry.getKey(), entry.getValue());
+//        }
+//
+//        return null; // No stop at this floor
+//    }
 
 
 
@@ -638,7 +730,7 @@ public class ElevatorSubsystem implements Runnable {
         boolean directionMatches = (direction == Direction.UP && currentFloor < destinationFloor) ||
                 (direction == Direction.DOWN && currentFloor > destinationFloor);
 
-        return (isArrival || isDestination) && directionMatches;
+        return isDestination && directionMatches;
     }
 
 
