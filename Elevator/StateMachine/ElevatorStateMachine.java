@@ -13,14 +13,13 @@ import java.util.Map;
 public class ElevatorStateMachine {
     private Map<String, ElevatorState> states;
     public Map<String, ElevatorState> getStates() {return states;}
-
     private ElevatorState currentState;
 
 
 
-    private int triggerTime = 0;
+    private  int triggerTime = 0;
     public int getTriggerTime() {return triggerTime;}
-    private List<String> stateChange = new ArrayList<>();
+    List<String> stateChange = new ArrayList<>();
     public List<String> getStateChange() {return stateChange;}
 
 
@@ -32,11 +31,12 @@ public class ElevatorStateMachine {
 
     private void initializeStates() {
         addState("Idle", new IdleState());
-        addState("MovingUp", new MovingUpState());
-        addState("MovingDown", new MovingDownState());
+        addState("Moving", new MovingState());
         addState("DoorsOpen", new DoorsOpenState());
         addState("DoorsClosed", new DoorsClosedState());
         addState("Stopped", new StoppedState());
+        addState("Disabled", new DisabledState());
+
 
     }
 
@@ -60,8 +60,8 @@ public class ElevatorStateMachine {
 
     public void triggerEvent(String event) {
         currentState.handleEvent(this, event);
-        stateChange.add(event);
         triggerTime++;
+        stateChange.add(event);
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {

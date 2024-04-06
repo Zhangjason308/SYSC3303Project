@@ -4,53 +4,43 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="21178f44-1f38-4ee9-8251-7e66e9d4f864" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Resources/DoorFault.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Scheduler/ElevatorStatusGUI.java" beforeDir="false" afterPath="$PROJECT_DIR$/Scheduler/ElevatorStatusGUI.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Scheduler/ElevatorStatusGUI.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Scheduler/ElevatorStatusGUI.class" afterDir="false" />
-    </list>
+    <list default="true" id="141608bb-b638-4560-8d97-1041b8b77dc2" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
-  <component name="ProjectColorInfo">{
-  &quot;customColor&quot;: &quot;&quot;,
-  &quot;associatedIndex&quot;: 3
-}</component>
-  <component name="ProjectId" id="2ei5jWqZXKOB43hV5k6HF6D7wYk" />
-  <component name="ProjectLevelVcsManager">
-    <ConfirmationsSetting value="2" id="Add" />
-  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 8
+}]]></component>
+  <component name="ProjectId" id="2eiH9QFy3n6aC8uMwPgPIBlbJxz" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Application.ElevatorStatusGUI.executor&quot;: &quot;Run&quot;,
-    &quot;Application.ElevatorSubsystem.executor&quot;: &quot;Run&quot;,
-    &quot;Application.FloorSubsystem.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/SYSC3303Project&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.ElevatorStatusGUI.executor": "Run",
+    "Application.ElevatorSubsystem.executor": "Run",
+    "Application.FloorSubsystem.executor": "Run",
+    "Application.SchedulerSubsystem.executor": "Run",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "D:/SYSC3303Project"
   }
-}</component>
-  <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="D:\SYSC3303Project\Resources" />
-    </key>
-  </component>
-  <component name="RunManager" selected="Application.ElevatorSubsystem">
+}]]></component>
+  <component name="RunManager" selected="Application.ElevatorStatusGUI">
     <configuration name="ElevatorStatusGUI" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="SYSC3303Project.Scheduler.ElevatorStatusGUI" />
       <module name="SYSC3303Project-main" />
@@ -90,11 +80,25 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <configuration name="SchedulerSubsystem" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="SYSC3303Project.Scheduler.SchedulerSubsystem" />
+      <module name="SYSC3303Project-main" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="SYSC3303Project.Scheduler.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Application.ElevatorSubsystem" />
         <item itemvalue="Application.FloorSubsystem" />
+        <item itemvalue="Application.ElevatorSubsystem" />
         <item itemvalue="Application.ElevatorStatusGUI" />
+        <item itemvalue="Application.SchedulerSubsystem" />
       </list>
     </recent_temporary>
   </component>
@@ -108,11 +112,11 @@
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="21178f44-1f38-4ee9-8251-7e66e9d4f864" name="Changes" comment="" />
-      <created>1712374694035</created>
+      <changelist id="141608bb-b638-4560-8d97-1041b8b77dc2" name="Changes" comment="" />
+      <created>1712380328478</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1712374694035</updated>
+      <updated>1712380328478</updated>
     </task>
     <servers />
   </component>
