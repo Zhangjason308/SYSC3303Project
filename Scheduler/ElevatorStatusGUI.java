@@ -19,11 +19,13 @@ public class ElevatorStatusGUI extends JFrame {
     private final Map<Integer, ElevatorStatus> elevatorStatusMap = new HashMap<>();
     private final JLabel[] floorLabels = new JLabel[4];
     private final JLabel[] directionLabels = new JLabel[4];
+    private final JLabel[] elevatorLabels = new JLabel[4];
     private SchedulerSubsystem schedulerSubsystem;
 
     private Icon upArrow;
     private Icon downArrow;
     private Icon elevatorImage;
+    private Icon DoorOpen;
 
 
     public ElevatorStatusGUI() throws Exception {
@@ -38,7 +40,8 @@ public class ElevatorStatusGUI extends JFrame {
         try {
             upArrow = new ImageIcon(resizeImage(ImageIO.read(getClass().getResource("../Resources/UpArrow.png")), 20, 20));
             downArrow = new ImageIcon(resizeImage(ImageIO.read(getClass().getResource("../Resources/DownArrow.png")), 20, 20));
-            elevatorImage = new ImageIcon(resizeImage(ImageIO.read(getClass().getResource("../Resources/Elevator.png")), 200, 200)); // Adjust size as needed
+            elevatorImage = new ImageIcon(resizeImage(ImageIO.read(getClass().getResource("../Resources/Elevator.jpg")), 200, 200)); // Adjust size as needed
+            DoorOpen = new ImageIcon(resizeImage(ImageIO.read(getClass().getResource("../Resources/DoorOpen.jpg")), 200, 200)); // Adjust size as needed
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -70,15 +73,17 @@ public class ElevatorStatusGUI extends JFrame {
             containerPanel.add(labelPanel, BorderLayout.NORTH);
 
             // Label to hold the elevator image
-            JLabel elevatorImageLabel = new JLabel(elevatorImage);
-            elevatorImageLabel.setHorizontalAlignment(JLabel.CENTER);
+            //JLabel elevatorImageLabel = new JLabel(elevatorImage);
+            //elevatorImageLabel.setHorizontalAlignment(JLabel.CENTER);
+            elevatorLabels[i] =new JLabel();
+            elevatorLabels[i].setIcon(elevatorImage);
 
             // Elevator panel with a titled border
             JPanel elevatorPanel = new JPanel();
             elevatorPanel.setBorder(BorderFactory.createTitledBorder("Elevator " + (2 * i + 10)));
 
             // Adding the elevator image label to the container panel
-            elevatorPanel.add(elevatorImageLabel, BorderLayout.CENTER);
+            elevatorPanel.add(elevatorLabels[i], BorderLayout.CENTER);
 
             containerPanel.add(elevatorPanel, BorderLayout.CENTER);
 
@@ -117,6 +122,16 @@ public class ElevatorStatusGUI extends JFrame {
                     directionLabels[(index-10)/2].setIcon(downArrow); // Unicode for downward arrow
                 } else {
                     directionLabels[(index-10)/2].setText(""); // stationary
+                }
+
+                //Dynamic effect of opening the door
+                if(status.getState().equals("DoorsOpen")){
+                    elevatorLabels[(index-10)/2].setIcon(DoorOpen);
+                }
+
+                //Dynamic effect of closing the door
+                if(status.getState().equals("DoorsClosed")){
+                    elevatorLabels[(index-10)/2].setIcon(elevatorImage);
                 }
             }
         });
