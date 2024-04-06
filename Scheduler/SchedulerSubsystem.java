@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
  */
 public class SchedulerSubsystem implements Runnable {
     private ElevatorStatusGUI observer;
-
+    private long startTime;
     private Map<FloorData, SchedulerStateMachine> commandStateMachines = new ConcurrentHashMap<>();
 
     private Map<Integer, ElevatorStatus> elevatorStatusMap = new HashMap<>();
@@ -191,6 +191,7 @@ public class SchedulerSubsystem implements Runnable {
 
     @Override
     public void run () {
+        startTime = clock.getCurrentTime();
         Thread receiveFloorThread = new Thread(receiveFromFloorAndReplyTask);
         receiveFloorThread.start();
 
@@ -205,15 +206,22 @@ public class SchedulerSubsystem implements Runnable {
 
         Thread elevatorSubsystem4TaskThread = new Thread(elevatorSubsystem4Task);
         elevatorSubsystem4TaskThread.start();
-
+        int timeoutCounter = 0; // Initialize a counter for timeouts
+        long startTime = clock.getCurrentTime();
         while (true) {
             try {
 
                 processRequests();
+                timeoutCounter = 0; // Reset the counter on successful receive
                 //Thread.sleep(100); // Adjust the sleep time as necessary
             } catch (Exception e) {
-                Thread.currentThread().interrupt();
+                timeoutCounter++;
                 System.out.println("Scheduler thread was interrupted, failed to complete operation");
+                if(timeoutCounter > 3){
+                    System.out.println("Total time is" + (clock.getCurrentTime() - startTime - 30000));
+                    Thread.currentThread().interrupt();
+                    System.exit(1);
+                }
                 //break;
             }
         }
@@ -222,6 +230,7 @@ public class SchedulerSubsystem implements Runnable {
         try {
             byte[] receiveFloorData = new byte[200]; // Buffer size for incoming data
             DatagramPacket receiveFSPacket = new DatagramPacket(receiveFloorData, receiveFloorData.length);
+            int timeoutCounter = 0; // Initialize a counter for timeouts
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     // Receive data from the floor subsystem
@@ -290,9 +299,17 @@ public class SchedulerSubsystem implements Runnable {
                         replyFSSocket.send(replyPacket); // Send acknowledgment
                         System.out.println("Replied to Floor Subsystem with 200 OK.");
                     }
+                    timeoutCounter = 0;
                 } catch (SocketTimeoutException timeoutException) {
                     // Retry the operation if a timeout occurs
+                    //Thread.currentThread().interrupt();
+                    timeoutCounter++;
                     System.out.println("FS Socket timeout occurred. Retrying...");
+                    if(timeoutCounter > 3){
+                        Thread.currentThread().interrupt();
+                        System.out.println("BOOP");
+                        return;
+                    }
                 }
             }
         } catch (IOException e) {
