@@ -129,22 +129,27 @@ public class SchedulerSubsystem implements Runnable {
                 long currentTime = System.currentTimeMillis();
                 elevatorStatusMap.forEach((id, status) -> {
                     if ("Moving".equals(status.getState())) {
+                        Integer lastLevel = lastCheckedLevels.get(id);
                         if (!watchStartTimes.containsKey(id)) {
                             // Start watching this elevator and log it
                             watchStartTimes.put(id, currentTime);
                             clock.getInstance().printCurrentTime();
-                            System.out.println("Watching Elevator ID: " + id + " for movement.");
+                            System.out.println(" - Watching Elevator ID: " + id + " for movement.");
+                        } else if (lastLevel != null && !lastLevel.equals(status.getCurrentFloor())) {
+                            // If the elevator has moved to a new floor, reset the watch timer
+                            watchStartTimes.put(id, currentTime);
+                            clock.getInstance().printCurrentTime();
+                            System.out.println(" - Elevator ID: " + id + " moved to floor " + status.getCurrentFloor() + ". Resetting watch timer.");
+                        }
 
-                            lastCheckedLevels.put(id, status.getCurrentFloor()); // Update last known level
-                        } else {
-                            Integer lastLevel = lastCheckedLevels.get(id);
-                            Long watchStartTime = watchStartTimes.get(id);
-                            if (lastLevel != null && lastLevel.equals(status.getCurrentFloor()) &&
-                                    (currentTime - watchStartTime) > checkIntervalMillis) {
-                                // Elevator level has not changed in the interval while it was supposed to be moving
-                                handleStalledElevator(id, status.getCurrentFloor());
-                            }
-                            lastCheckedLevels.put(id, status.getCurrentFloor());
+                        // Update last known level
+                        lastCheckedLevels.put(id, status.getCurrentFloor());
+
+                        // Check if the elevator has stalled
+                        if (lastLevel != null && lastLevel.equals(status.getCurrentFloor()) &&
+                                (currentTime - watchStartTimes.get(id)) > checkIntervalMillis) {
+                            // Elevator level has not changed in the interval while it was supposed to be moving
+                            handleStalledElevator(id, status.getCurrentFloor());
                         }
                     } else {
                         // If not moving, remove from watch list and last checked levels
@@ -164,12 +169,14 @@ public class SchedulerSubsystem implements Runnable {
         private void handleStalledElevator(int elevatorId, int currentFloor) {
             // Log, alert, or recover from the stalled elevator situation
             clock.getInstance().printCurrentTime();
-            System.out.println("WatchDogTimer: Elevator " + elevatorId + " appears to be stalled at floor " + currentFloor);
+            System.out.println(" - WatchDogTimer: Elevator " + elevatorId + " appears to be stalled at floor " + currentFloor);
             elevatorStatusMap.get(elevatorId).setState("Disabled");
-            System.out.println("WatchDogTimer: Elevator " + elevatorId + " has been disabled");
+            clock.getInstance().printCurrentTime();
+            System.out.println(" - WatchDogTimer: Elevator " + elevatorId + " has been disabled");
 
             // Reset the watch for this elevator
             watchStartTimes.remove(elevatorId);
+            lastCheckedLevels.remove(elevatorId);
         }
     };
 
