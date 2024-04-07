@@ -4,7 +4,28 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="141608bb-b638-4560-8d97-1041b8b77dc2" name="Changes" comment="" />
+    <list default="true" id="141608bb-b638-4560-8d97-1041b8b77dc2" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Elevator/ElevatorSubsystem.java" beforeDir="false" afterPath="$PROJECT_DIR$/Elevator/ElevatorSubsystem.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Elevator/ElevatorTiming.java" beforeDir="false" afterPath="$PROJECT_DIR$/Elevator/ElevatorTiming.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Elevator/HardFault.java" beforeDir="false" afterPath="$PROJECT_DIR$/Elevator/HardFault.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ElevatorEvents.csv" beforeDir="false" afterPath="$PROJECT_DIR$/ElevatorEvents.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scheduler/SchedulerSubsystem.java" beforeDir="false" afterPath="$PROJECT_DIR$/Scheduler/SchedulerSubsystem.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Elevator/ElevatorSubsystem.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Elevator/ElevatorSubsystem.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Elevator/HardFault.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Elevator/HardFault.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/ElevatorEvents.csv" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/ElevatorEvents.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Resources/Elevator.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Scheduler/SchedulerSubsystem$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Scheduler/SchedulerSubsystem$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Scheduler/SchedulerSubsystem$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Scheduler/SchedulerSubsystem$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Scheduler/SchedulerSubsystem.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Scheduler/SchedulerSubsystem.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Test/TestElevatorRunningNormally$TestSharedDataInterface1.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Test/TestElevatorRunningNormally.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Test/TestInformationWithFault$TestSharedDataInterface1.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Test/TestInformationWithFault.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Test/TestInitializationOfAnElevator$TestSharedDataInterface.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Test/TestInitializationOfAnElevator.class" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -17,30 +38,34 @@
       </list>
     </option>
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 8
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 8
+}</component>
   <component name="ProjectId" id="2eiH9QFy3n6aC8uMwPgPIBlbJxz" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Application.ElevatorStatusGUI.executor": "Run",
-    "Application.ElevatorSubsystem.executor": "Run",
-    "Application.FloorSubsystem.executor": "Run",
-    "Application.SchedulerSubsystem.executor": "Run",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "D:/SYSC3303Project"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.ElevatorStatusGUI.executor&quot;: &quot;Run&quot;,
+    &quot;Application.ElevatorSubsystem.executor&quot;: &quot;Run&quot;,
+    &quot;Application.FloorSubsystem.executor&quot;: &quot;Run&quot;,
+    &quot;Application.SchedulerSubsystem.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/SYSC3303Project&quot;
   }
-}]]></component>
-  <component name="RunManager" selected="Application.ElevatorStatusGUI">
+}</component>
+  <component name="RunManager" selected="Application.ElevatorSubsystem">
     <configuration name="ElevatorStatusGUI" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="SYSC3303Project.Scheduler.ElevatorStatusGUI" />
       <module name="SYSC3303Project-main" />
@@ -97,15 +122,15 @@
       <list>
         <item itemvalue="Application.FloorSubsystem" />
         <item itemvalue="Application.ElevatorSubsystem" />
-        <item itemvalue="Application.ElevatorStatusGUI" />
         <item itemvalue="Application.SchedulerSubsystem" />
+        <item itemvalue="Application.ElevatorStatusGUI" />
       </list>
     </recent_temporary>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="jdk-22-openjdk-22-3183f394aec4-bad0321e" />
+        <option value="jdk-21.0.1-openjdk-21.0.1-4caba194b151-23eed401" />
       </set>
     </attachedChunks>
   </component>
