@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="141608bb-b638-4560-8d97-1041b8b77dc2" name="Changes" comment="Merge branch 'caleb_branch' of https://github.com/Zhangjason308/SYSC3303Project into caleb_branch" />
+    <list default="true" id="141608bb-b638-4560-8d97-1041b8b77dc2" name="Changes" comment="Merge branch 'caleb_branch' of https://github.com/Zhangjason308/SYSC3303Project into caleb_branch">
+      <change beforePath="$PROJECT_DIR$/Scheduler/SchedulerSubsystem.java" beforeDir="false" afterPath="$PROJECT_DIR$/Scheduler/SchedulerSubsystem.java" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -15,6 +17,20 @@
       <list>
         <option value="Class" />
       </list>
+    </option>
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;Waluiyeegi&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">
+    <option name="selectedUrlAndAccountId">
+      <UrlAndAccount>
+        <option name="accountId" value="a895bfb0-92bd-4cce-bc8c-a5b41062d850" />
+        <option name="url" value="https://github.com/Zhangjason308/SYSC3303Project.git" />
+      </UrlAndAccount>
     </option>
   </component>
   <component name="MarkdownSettingsMigration">
@@ -28,20 +44,21 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Application.ElevatorStatusGUI.executor": "Run",
-    "Application.ElevatorSubsystem.executor": "Run",
-    "Application.FloorSubsystem.executor": "Run",
-    "Application.SchedulerSubsystem.executor": "Run",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "caleb__branch",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "D:/SYSC3303Project"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.ElevatorStatusGUI.executor&quot;: &quot;Run&quot;,
+    &quot;Application.ElevatorSubsystem.executor&quot;: &quot;Run&quot;,
+    &quot;Application.FloorSubsystem.executor&quot;: &quot;Run&quot;,
+    &quot;Application.SchedulerSubsystem.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;caleb__branch&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/SYSC3303Project&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;
   }
-}]]></component>
-  <component name="RunManager" selected="Application.ElevatorStatusGUI">
+}</component>
+  <component name="RunManager" selected="Application.ElevatorSubsystem">
     <configuration name="ElevatorStatusGUI" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="SYSC3303Project.Scheduler.ElevatorStatusGUI" />
       <module name="SYSC3303Project-main" />
@@ -96,9 +113,9 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Application.ElevatorStatusGUI" />
-        <item itemvalue="Application.FloorSubsystem" />
         <item itemvalue="Application.ElevatorSubsystem" />
+        <item itemvalue="Application.FloorSubsystem" />
+        <item itemvalue="Application.ElevatorStatusGUI" />
         <item itemvalue="Application.SchedulerSubsystem" />
       </list>
     </recent_temporary>
@@ -127,7 +144,15 @@
       <option name="project" value="LOCAL" />
       <updated>1712459424050</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Merge branch 'caleb_branch' of https://github.com/Zhangjason308/SYSC3303Project into caleb_branch">
+      <option name="closed" value="true" />
+      <created>1712459576995</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1712459576995</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">

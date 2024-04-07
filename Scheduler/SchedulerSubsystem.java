@@ -188,8 +188,9 @@ public class SchedulerSubsystem implements Runnable {
                 clock.getInstance().printCurrentTime();
                 System.out.println("Received from Elevator Subsystem 10: " + elevatorRequest);
                 printAllElevatorStatuses();
-                if (isOnLastItem) {
+                if (isOnLastItem && elevatorStatusMap.isEmpty()) {
                     System.out.println("Total time is " + (clock.getCurrentTime() - startTime));
+                    isOnLastItem = false;
                 }
             }
         } catch (IOException e) {
@@ -210,8 +211,9 @@ public class SchedulerSubsystem implements Runnable {
                 clock.getInstance().printCurrentTime();
                 System.out.println("Received from Elevator Subsystem 12: " + elevatorRequest);
                 printAllElevatorStatuses();
-                if (isOnLastItem) {
+                if (isOnLastItem && elevatorStatusMap.isEmpty()) {
                     System.out.println("Total time is " + (clock.getCurrentTime() - startTime));
+                    isOnLastItem = false;
                 }
             }
         } catch (IOException e) {
@@ -232,8 +234,9 @@ public class SchedulerSubsystem implements Runnable {
                 clock.getInstance().printCurrentTime();
                 System.out.println("Received from Elevator Subsystem 14: " + elevatorRequest);
                 printAllElevatorStatuses();
-                if (isOnLastItem) {
+                if (isOnLastItem && elevatorStatusMap.isEmpty()) {
                     System.out.println("Total time is " + (clock.getCurrentTime() - startTime));
+                    isOnLastItem = false;
                 }
             }
         } catch (IOException e) {
@@ -254,8 +257,9 @@ public class SchedulerSubsystem implements Runnable {
                 clock.getInstance().printCurrentTime();
                 System.out.println("Received from Elevator Subsystem 16: " + elevatorRequest);
                 printAllElevatorStatuses();
-                if (isOnLastItem) {
+                if (isOnLastItem && elevatorStatusMap.isEmpty()) {
                     System.out.println("Total time is " + (clock.getCurrentTime() - startTime));
+                    isOnLastItem = false;
                 }
             }
         } catch (IOException e) {
