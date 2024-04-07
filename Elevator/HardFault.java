@@ -6,7 +6,7 @@ public class HardFault {
 
     @Override
     public String toString() {
-        return "DoorFault{" +
+        return "HardFault{" +
                 "faultType='" + faultType +
                 '}';
     }
