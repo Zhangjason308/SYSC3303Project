@@ -4,7 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="141608bb-b638-4560-8d97-1041b8b77dc2" name="Changes" comment="Merge branch 'caleb_branch' of https://github.com/Zhangjason308/SYSC3303Project into caleb_branch" />
+    <list default="true" id="141608bb-b638-4560-8d97-1041b8b77dc2" name="Changes" comment="Merge branch 'caleb_branch' of https://github.com/Zhangjason308/SYSC3303Project into caleb_branch">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scheduler/SchedulerSubsystem.java" beforeDir="false" afterPath="$PROJECT_DIR$/Scheduler/SchedulerSubsystem.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Scheduler/SchedulerSubsystem$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Scheduler/SchedulerSubsystem$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Scheduler/SchedulerSubsystem$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Scheduler/SchedulerSubsystem$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Scheduler/SchedulerSubsystem.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/SYSC3303Project-main/SYSC3303Project/Scheduler/SchedulerSubsystem.class" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -15,6 +21,20 @@
       <list>
         <option value="Class" />
       </list>
+    </option>
+  </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "Waluiyeegi"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings">
+    <option name="selectedUrlAndAccountId">
+      <UrlAndAccount>
+        <option name="accountId" value="a895bfb0-92bd-4cce-bc8c-a5b41062d850" />
+        <option name="url" value="https://github.com/Zhangjason308/SYSC3303Project.git" />
+      </UrlAndAccount>
     </option>
   </component>
   <component name="MarkdownSettingsMigration">
@@ -38,7 +58,8 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "caleb__branch",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "D:/SYSC3303Project"
+    "last_opened_file_path": "D:/SYSC3303Project",
+    "node.js.selected.package.tslint": "(autodetect)"
   }
 }]]></component>
   <component name="RunManager" selected="Application.ElevatorSubsystem">
@@ -127,7 +148,15 @@
       <option name="project" value="LOCAL" />
       <updated>1712459424050</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Merge branch 'caleb_branch' of https://github.com/Zhangjason308/SYSC3303Project into caleb_branch">
+      <option name="closed" value="true" />
+      <created>1712459576995</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1712459576995</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">

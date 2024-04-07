@@ -23,6 +23,7 @@ import java.util.*;
 
 import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -43,6 +44,8 @@ public class SchedulerSubsystem implements Runnable {
     FloorData command;
     SimulatedClockSingleton clock;
     SchedulerStateMachine schedulerStateMachine;
+
+    boolean isOnLastItem = false;
 
     public static void main(String[] args) throws Exception{
         SharedDataImpl sharedData = new SharedDataImpl();
@@ -82,7 +85,6 @@ public class SchedulerSubsystem implements Runnable {
     public void run () {
         schedulerStateMachine.getCurrentState().toString();
 
-        startTime = clock.getCurrentTime();
         Thread elevatorSubsystem1TaskThread = new Thread(elevatorSubsystem1Task);
         elevatorSubsystem1TaskThread.start();
 
@@ -98,7 +100,6 @@ public class SchedulerSubsystem implements Runnable {
         Thread receiveFloorThread = new Thread(receiveFromFloorAndReplyTask);
         receiveFloorThread.start();
         int timeoutCounter = 0; // Initialize a counter for timeouts
-        long startTime = clock.getCurrentTime();
         while (true) {
             try {
                 processRequests();
@@ -108,7 +109,7 @@ public class SchedulerSubsystem implements Runnable {
                 timeoutCounter++;
                 System.out.println("Scheduler thread was interrupted, failed to complete operation");
                 if(timeoutCounter > 3){
-                    System.out.println("Total time is" + (clock.getCurrentTime() - startTime - 30000));
+                    System.out.println("Total time is " + (clock.getCurrentTime() - startTime - 30000));
                     Thread.currentThread().interrupt();
                     System.exit(1);
                 }
@@ -130,6 +131,9 @@ public class SchedulerSubsystem implements Runnable {
                 clock.getInstance().printCurrentTime();
                 System.out.println("Received from Elevator Subsystem 10: " + elevatorRequest);
                 printAllElevatorStatuses();
+                if (isOnLastItem) {
+                    System.out.println("Total time is " + (clock.getCurrentTime() - startTime));
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -149,6 +153,9 @@ public class SchedulerSubsystem implements Runnable {
                 clock.getInstance().printCurrentTime();
                 System.out.println("Received from Elevator Subsystem 12: " + elevatorRequest);
                 printAllElevatorStatuses();
+                if (isOnLastItem) {
+                    System.out.println("Total time is " + (clock.getCurrentTime() - startTime));
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -168,6 +175,9 @@ public class SchedulerSubsystem implements Runnable {
                 clock.getInstance().printCurrentTime();
                 System.out.println("Received from Elevator Subsystem 14: " + elevatorRequest);
                 printAllElevatorStatuses();
+                if (isOnLastItem) {
+                    System.out.println("Total time is " + (clock.getCurrentTime() - startTime));
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -187,6 +197,9 @@ public class SchedulerSubsystem implements Runnable {
                 clock.getInstance().printCurrentTime();
                 System.out.println("Received from Elevator Subsystem 16: " + elevatorRequest);
                 printAllElevatorStatuses();
+                if (isOnLastItem) {
+                    System.out.println("Total time is " + (clock.getCurrentTime() - startTime));
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -296,6 +309,7 @@ public class SchedulerSubsystem implements Runnable {
             byte[] receiveFloorData = new byte[200]; // Buffer size for incoming data
             DatagramPacket receiveFSPacket = new DatagramPacket(receiveFloorData, receiveFloorData.length);
             int timeoutCounter = 0; // Initialize a counter for timeouts
+            startTime = clock.getCurrentTime();
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     // Receive data from the floor subsystem
@@ -356,14 +370,16 @@ public class SchedulerSubsystem implements Runnable {
                         clock.printCurrentTime();
                         System.out.println("Replying to Elevator Subsystem.....");
                         rpc_reply(sendESPacket, sendESSocket, "Elevator " + elevatorId);
-
                         // Prepare and send acknowledgment back to the floor subsystem
                         byte[] replyData = "200 OK".getBytes(); // Acknowledgment message
                         DatagramPacket replyPacket = new DatagramPacket(replyData, replyData.length, receiveFSPacket.getAddress(), receiveFSPacket.getPort());
                         replyFSSocket.send(replyPacket); // Send acknowledgment
                         System.out.println("Replied to Floor Subsystem with 200 OK.");
+
                     }
+
                     timeoutCounter = 0;
+
                 } catch (SocketTimeoutException timeoutException) {
                     // Retry the operation if a timeout occurs
                     //Thread.currentThread().interrupt();
@@ -371,13 +387,14 @@ public class SchedulerSubsystem implements Runnable {
                     System.out.println("FS Socket timeout occurred. Retrying...");
                     if(timeoutCounter > 3){
                         Thread.currentThread().interrupt();
-                        System.out.println("BOOP");
+                        isOnLastItem = true;
                         return;
                     }
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
+            System.out.println("the total time is: " + (clock.getCurrentTime() - startTime));
             Thread.currentThread().interrupt(); // Interrupt the thread on I/O errors
         }
     };
