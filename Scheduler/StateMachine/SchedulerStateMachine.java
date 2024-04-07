@@ -13,16 +13,9 @@ import java.util.Map;
  */
 public class SchedulerStateMachine {
     private Map<String, SchedulerState> states;
-    public Map<String, SchedulerState> getStates() {return states;}
     private SchedulerState currentState;
-
     private FloorData command;
-
-
-    private  int triggerTime = 0;
-    public int getTriggerTime() {return triggerTime;}
     List<String> stateChange = new ArrayList<>();
-    public List<String> getStateChange() {return stateChange;}
 
     public SchedulerStateMachine(FloorData command) {
         states = new HashMap<>();
@@ -32,11 +25,11 @@ public class SchedulerStateMachine {
     }
 
     private void initializeStates() {
-        addState("Idle", new IdleState());
-        addState("CommandSelected", new CommandSelectedState());
-        addState("WaitingForArrivalSensor", new WaitingForArrivalSensorState());
-        addState("WaitingForDestinationSensor", new WaitingForDestinationSensorState());
-        addState("CommandComplete", new CommandCompleteState());
+        addState("Idle", new IdleStates());
+        addState("GetElevatorStatus", new GetElevatorStatusStates());
+        addState("GetFloorCommand", new GetFloorCommandStates());
+        addState("ProcessingElevatorStatus", new ProcessingElevatorStatusStates());
+        addState("ProcessingFloorCommand", new ProcessingFloorCommandStates());
     }
 
     public void addState(String stateName, SchedulerState state) {
@@ -59,7 +52,6 @@ public class SchedulerStateMachine {
 
     public void triggerEvent(String event) {
         currentState.handleEvent(this, event, command);
-        triggerTime++;
         stateChange.add(event);
         try {
             Thread.sleep(1000);
@@ -74,6 +66,7 @@ public class SchedulerStateMachine {
                 return entry.getKey();
             }
         }
-        return null; // Or throw an exception if the state is not found
+        // Or throw an exception if the state is not found
+        return null;
     }
 }

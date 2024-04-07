@@ -32,19 +32,28 @@ import java.util.stream.Collectors;
  */
 public class SchedulerSubsystem implements Runnable {
     private ElevatorStatusGUI observer;
-
+    private long startTime;
     private Map<FloorData, SchedulerStateMachine> commandStateMachines = new ConcurrentHashMap<>();
 
     private Map<Integer, ElevatorStatus> elevatorStatusMap = new HashMap<>();
 
-    DatagramPacket receiveFSPacket, replyFSPacket, receiveESPacket, sendESPacket;
-    DatagramSocket receiveFSSocket, replyFSSocket, receiveElevatorStatusSocket, sendESSocket, receiveESResponseSocket, receiveElevatorStatusSocket1, receiveElevatorStatusSocket2, receiveElevatorStatusSocket3, receiveElevatorStatusSocket4;
+    DatagramPacket sendESPacket;
+    DatagramSocket receiveFSSocket, replyFSSocket, sendESSocket, receiveESResponseSocket, receiveElevatorStatusSocket1, receiveElevatorStatusSocket2, receiveElevatorStatusSocket3, receiveElevatorStatusSocket4;
     SharedDataInterface sharedData;
     FloorData command;
     SimulatedClockSingleton clock;
+    SchedulerStateMachine schedulerStateMachine;
 
-    public String TestFault;
-    public String TestInformationOfElevator;
+    public static void main(String[] args) throws Exception{
+        SharedDataImpl sharedData = new SharedDataImpl();
+        LocateRegistry.createRegistry(1099);
+        Naming.rebind("SharedData", sharedData);
+
+        SchedulerSubsystem schedulerSubsystem = new SchedulerSubsystem((sharedData));
+        Thread thread = new Thread(schedulerSubsystem);
+        thread.start();
+    }
+
 
     public SchedulerSubsystem(SharedDataInterface sharedData) throws InterruptedException {
         this.clock = SimulatedClockSingleton.getInstance();
@@ -62,24 +71,127 @@ public class SchedulerSubsystem implements Runnable {
             replyFSSocket.setSoTimeout(10000);
             sendESSocket.setSoTimeout(10000);
             receiveFSSocket.setSoTimeout(10000);
+            schedulerStateMachine = new SchedulerStateMachine(command);
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
         //this.elevatorStatusMap = new ArrayList<>();
     }
 
-    public void setObserver(ElevatorStatusGUI observer) {
-        this.observer = observer;
-    }
+    @Override
+    public void run () {
+        schedulerStateMachine.getCurrentState().toString();
 
-    protected void notifyObserver() {
-        if (observer != null) {
-            observer.updateElevatorStatuses(getElevatorStatusMap());
+        startTime = clock.getCurrentTime();
+        Thread elevatorSubsystem1TaskThread = new Thread(elevatorSubsystem1Task);
+        elevatorSubsystem1TaskThread.start();
+
+        Thread elevatorSubsystem2TaskThread = new Thread(elevatorSubsystem2Task);
+        elevatorSubsystem2TaskThread.start();
+
+        Thread elevatorSubsystem3TaskThread = new Thread(elevatorSubsystem3Task);
+        elevatorSubsystem3TaskThread.start();
+
+        Thread elevatorSubsystem4TaskThread = new Thread(elevatorSubsystem4Task);
+        elevatorSubsystem4TaskThread.start();
+
+        Thread receiveFloorThread = new Thread(receiveFromFloorAndReplyTask);
+        receiveFloorThread.start();
+        int timeoutCounter = 0; // Initialize a counter for timeouts
+        long startTime = clock.getCurrentTime();
+        while (true) {
+            try {
+                processRequests();
+                timeoutCounter = 0; // Reset the counter on successful receive
+                //Thread.sleep(100); // Adjust the sleep time as necessary
+            } catch (Exception e) {
+                timeoutCounter++;
+                System.out.println("Scheduler thread was interrupted, failed to complete operation");
+                if(timeoutCounter > 3){
+                    System.out.println("Total time is" + (clock.getCurrentTime() - startTime - 30000));
+                    Thread.currentThread().interrupt();
+                    System.exit(1);
+                }
+                //break;
+            }
         }
     }
-    public Map<Integer, ElevatorStatus> getElevatorStatusMap() {
-        return elevatorStatusMap;
-    }
+
+    // Elevator Subsystem 1 Task
+    Runnable elevatorSubsystem1Task = () -> {
+        try {
+            byte[] receiveData = new byte[200];
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+            while (!Thread.currentThread().isInterrupted()) {
+                receivePacket.setLength(receiveData.length);
+                receiveElevatorStatusSocket1.receive(receivePacket);
+                String elevatorRequest = new String(receivePacket.getData(), receivePacket.getOffset(), receivePacket.getLength());
+                addElevatorStatus(elevatorRequest);
+                clock.getInstance().printCurrentTime();
+                System.out.println("Received from Elevator Subsystem 10: " + elevatorRequest);
+                printAllElevatorStatuses();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    };
+
+    // Elevator Subsystem 2 Task
+    Runnable elevatorSubsystem2Task = () -> {
+        try {
+            byte[] receiveData = new byte[200];
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+            while (!Thread.currentThread().isInterrupted()) {
+                receivePacket.setLength(receiveData.length);
+                receiveElevatorStatusSocket2.receive(receivePacket);
+                String elevatorRequest = new String(receivePacket.getData(), receivePacket.getOffset(), receivePacket.getLength());
+                addElevatorStatus(elevatorRequest);
+                clock.getInstance().printCurrentTime();
+                System.out.println("Received from Elevator Subsystem 12: " + elevatorRequest);
+                printAllElevatorStatuses();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    };
+
+    // Elevator Subsystem 3 Task
+    Runnable elevatorSubsystem3Task = () -> {
+        try {
+            byte[] receiveData = new byte[200];
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+            while (!Thread.currentThread().isInterrupted()) {
+                receivePacket.setLength(receiveData.length);
+                receiveElevatorStatusSocket3.receive(receivePacket);
+                String elevatorRequest = new String(receivePacket.getData(), receivePacket.getOffset(), receivePacket.getLength());
+                addElevatorStatus(elevatorRequest);
+                clock.getInstance().printCurrentTime();
+                System.out.println("Received from Elevator Subsystem 14: " + elevatorRequest);
+                printAllElevatorStatuses();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    };
+
+    // Elevator Subsystem 4 Task
+    Runnable elevatorSubsystem4Task = () -> {
+        try {
+            byte[] receiveData = new byte[200];
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+            while (!Thread.currentThread().isInterrupted()) {
+                receivePacket.setLength(receiveData.length);
+                receiveElevatorStatusSocket4.receive(receivePacket);
+                String elevatorRequest = new String(receivePacket.getData(), receivePacket.getOffset(), receivePacket.getLength());
+                addElevatorStatus(elevatorRequest);
+                clock.getInstance().printCurrentTime();
+                System.out.println("Received from Elevator Subsystem 16: " + elevatorRequest);
+                printAllElevatorStatuses();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    };
 
     public void addElevatorStatus(String statusString) {
         // Check if the statusString is null or empty
@@ -112,6 +224,10 @@ public class SchedulerSubsystem implements Runnable {
             return;
         }
 
+        System.out.print("Elevator " + elevatorId + ": ");
+        schedulerStateMachine.setState("GetElevatorStatus");
+        System.out.println();
+
         List<AbstractMap.SimpleEntry<Integer, Integer>> targetFloors = new ArrayList<>();
 
         // Process target floors if they exist
@@ -140,7 +256,6 @@ public class SchedulerSubsystem implements Runnable {
                 }
             }
         }
-
 
         List<DoorFault> doorFaults = new ArrayList<>();
 
@@ -175,60 +290,18 @@ public class SchedulerSubsystem implements Runnable {
 
     }
 
-    public void completeCommand(FloorData command) {
-        commandStateMachines.remove(command);
-        // Perform any additional cleanup or notification needed
-    }
-
-    public void triggerCommandEvent(FloorData command, String event) {
-        SchedulerStateMachine stateMachine = commandStateMachines.get(command);
-        if (stateMachine != null) {
-            stateMachine.triggerEvent(event);
-        } else {
-        }
-    }
-
-
-    @Override
-    public void run () {
-        Thread receiveFloorThread = new Thread(receiveFromFloorAndReplyTask);
-        receiveFloorThread.start();
-
-        Thread elevatorSubsystem1TaskThread = new Thread(elevatorSubsystem1Task);
-        elevatorSubsystem1TaskThread.start();
-
-        Thread elevatorSubsystem2TaskThread = new Thread(elevatorSubsystem2Task);
-        elevatorSubsystem2TaskThread.start();
-
-        Thread elevatorSubsystem3TaskThread = new Thread(elevatorSubsystem3Task);
-        elevatorSubsystem3TaskThread.start();
-
-        Thread elevatorSubsystem4TaskThread = new Thread(elevatorSubsystem4Task);
-        elevatorSubsystem4TaskThread.start();
-
-        while (true) {
-            try {
-
-                processRequests();
-                //Thread.sleep(100); // Adjust the sleep time as necessary
-            } catch (Exception e) {
-                Thread.currentThread().interrupt();
-                System.out.println("Scheduler thread was interrupted, failed to complete operation");
-                //break;
-            }
-        }
-    }
     Runnable receiveFromFloorAndReplyTask = () -> {
         try {
+            schedulerStateMachine.setState("GetFloorCommand");
             byte[] receiveFloorData = new byte[200]; // Buffer size for incoming data
             DatagramPacket receiveFSPacket = new DatagramPacket(receiveFloorData, receiveFloorData.length);
+            int timeoutCounter = 0; // Initialize a counter for timeouts
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     // Receive data from the floor subsystem
                     clock.printCurrentTime();
                     System.out.println("Scheduler: Waiting to receive from Floor Subsystem...");
                     receiveFSSocket.receive(receiveFSPacket); // Listen and receive data from floor subsystem
-
                     String dataStr = new String(receiveFSPacket.getData(), receiveFSPacket.getOffset(), receiveFSPacket.getLength());
 
                     if (dataStr.contains("FAULT")){
@@ -245,8 +318,8 @@ public class SchedulerSubsystem implements Runnable {
                         // Send the fault message to the specified elevator
                         DatagramPacket faultPacket = new DatagramPacket(faultDataBytes, faultDataBytes.length, InetAddress.getLocalHost(), elevatorId + 1); // Assuming port is based on elevatorId
                         clock.printCurrentTime();
-                        TestFault = "Sending FAULT to Elevator " + elevatorId + ": " + faultMessage;
                         System.out.println("Sending FAULT to Elevator " + elevatorId + ": " + faultMessage);
+                        schedulerStateMachine.setState("GetFloorCommand");
                         sendESSocket.send(faultPacket);
                     }
                     else {
@@ -290,9 +363,17 @@ public class SchedulerSubsystem implements Runnable {
                         replyFSSocket.send(replyPacket); // Send acknowledgment
                         System.out.println("Replied to Floor Subsystem with 200 OK.");
                     }
+                    timeoutCounter = 0;
                 } catch (SocketTimeoutException timeoutException) {
                     // Retry the operation if a timeout occurs
+                    //Thread.currentThread().interrupt();
+                    timeoutCounter++;
                     System.out.println("FS Socket timeout occurred. Retrying...");
+                    if(timeoutCounter > 3){
+                        Thread.currentThread().interrupt();
+                        System.out.println("BOOP");
+                        return;
+                    }
                 }
             }
         } catch (IOException e) {
@@ -301,8 +382,161 @@ public class SchedulerSubsystem implements Runnable {
         }
     };
 
-    private void checkElevatorAndTransitionState(ElevatorStatus chosenElevator, FloorData floorData) {
+    private int chooseElevator(FloorData command) throws RemoteException {
+        schedulerStateMachine.setState("ProcessingFloorCommand");
+        List<ElevatorStatus> applicableElevators = new ArrayList<>();
+        List<ElevatorStatus> allElevators = new ArrayList<>();
 
+        // Collect elevators that meet the criteria
+        for (ElevatorStatus status : elevatorStatusMap.values()) {
+            boolean isElevatorMovingCorrectly = ((status.getDirection() == command.getDirection() && status.getDirection() == Direction.DOWN)  || status.getDirection() == Direction.STATIONARY) && status.getCurrentFloor() >= command.getArrivalFloor();
+            boolean isElevatorMovingCorrectlyUp = ((status.getDirection() == command.getDirection() && status.getDirection() == Direction.UP) || status.getDirection() == Direction.STATIONARY) && status.getCurrentFloor() <= command.getArrivalFloor();
+
+            if (isElevatorMovingCorrectly || isElevatorMovingCorrectlyUp) {
+                applicableElevators.add(status);
+            }
+            allElevators.add(status);
+        }
+
+        // Sort the list of applicable elevators based on some criteria, for example, proximity to the command's arrival floor
+        applicableElevators.sort(new Comparator<ElevatorStatus>() {
+            @Override
+            public int compare(ElevatorStatus o1, ElevatorStatus o2) {
+                // This example sorts based on proximity to the arrival floor
+                // Adjust according to your specific criteria
+                return Integer.compare(Math.abs(o1.getCurrentFloor() - command.getArrivalFloor()),
+                        Math.abs(o2.getCurrentFloor() - command.getArrivalFloor()));
+            }
+        });
+
+        //matchingElevators.sort(Comparator.comparingInt(e -> Math.abs(e.getCurrentFloor() - command.getArrivalFloor())));
+
+        //sorts allElevators which is chosen if there are no elevators headed in the same direction
+        allElevators.sort(new Comparator<ElevatorStatus>() {
+            @Override
+            public int compare(ElevatorStatus o1, ElevatorStatus o2) {
+                // This example sorts based on proximity to the arrival floor
+                // Adjust according to your specific criteria
+                return Integer.compare(Math.abs(o1.getCurrentFloor() - command.getArrivalFloor()),
+                        Math.abs(o2.getCurrentFloor() - command.getArrivalFloor()));
+            }
+        });
+
+        if (!applicableElevators.isEmpty()) {
+            // Return the id of the first elevator in the sorted list
+            return applicableElevators.getFirst().getId();
+        }
+
+        // Handle the case where no elevators are applicable
+        // This might involve choosing any available elevator or throwing an exception
+        for(ElevatorStatus es : allElevators){
+            if (es.getDirection() == command.getDirection() || es.getDirection() == Direction.STATIONARY){
+                return es.getId();
+            }
+        }
+        return allElevators.getFirst().getId();
+        //throw new IllegalStateException("No applicable elevators found for the command.");
+    }
+
+    private synchronized void printAllElevatorStatuses() {
+        schedulerStateMachine.setState("ProcessingElevatorStatus");
+        // Update headers to include "Door Faults"
+        String[] headers = {"Elevator", "Level", "Direction", "State", "Target Floors", "Door Faults"};
+        // Adjust the maximum width for each column to accommodate the new "Door Faults" column
+        int[] columnWidths = {10, 10, 10, 15, 20, 15}; // Adjust the last column width as needed for door faults
+        clock.printCurrentTime();
+
+        // Print header with separators
+        for (int i = 0; i < headers.length; i++) {
+            String headerFormat = "| %-" + columnWidths[i] + "s ";
+            System.out.printf(headerFormat, headers[i]);
+        }
+        System.out.println("|");
+        clock.printCurrentTime();
+
+        // Print a separator line
+        for (int width : columnWidths) {
+            System.out.print("+");
+            for (int j = 0; j < width + 1; j++) {
+                System.out.print("-");
+            }
+        }
+
+        System.out.println("+");
+        clock.printCurrentTime();
+
+        // Sort and print the rows of elevator status information including target floors and door faults
+        elevatorStatusMap.values().stream()
+                .sorted(Comparator.comparingInt(ElevatorStatus::getId))
+                .forEach(status -> {
+
+                    System.out.printf("| %-" + (columnWidths[0] - 1) + "d ", status.getId()); // Elevator ID
+                    System.out.printf("| %-" + (columnWidths[1] - 1) + "d ", status.getCurrentFloor()); // Elevator Level
+                    System.out.printf("| %-" + (columnWidths[2] - 1) + "s ", status.getDirection().toString()); // Elevator Direction
+                    System.out.printf("| %-" + (columnWidths[3] - 1) + "s ", status.getState()); // Elevator State
+
+                    // Target Floors formatting
+                    String targetFloorsStr = status.getTargetFloors().isEmpty() ? "None" :
+                            status.getTargetFloors().stream()
+                                    .map(pair -> "(" + pair.getKey() + "->" + pair.getValue() + ")")
+                                    .collect(Collectors.joining(","));
+
+
+                    System.out.printf("| %-" + (columnWidths[4] - 1) + "s ", targetFloorsStr);
+
+                    // Door Faults formatting
+                    String doorFaultsStr = status.getDoorFaults().isEmpty() ? "None" :
+                            status.getDoorFaults().stream()
+                                    .map(fault -> fault.getFaultType() + ":" + fault.getRetryAttempts())
+                                    .collect(Collectors.joining(", "));
+
+                    System.out.printf("| %-" + (columnWidths[5] - 1) + "s ", doorFaultsStr); // Door Faults
+
+                    System.out.println("|");
+                    clock.printCurrentTime();
+
+                });
+
+        // Print bottom table border
+        for (int width : columnWidths) {
+            System.out.print("+");
+            for (int j = 0; j < width + 1; j++) {
+                System.out.print("-");
+            }
+        }
+        System.out.println("+");
+    }
+
+    public void setObserver(ElevatorStatusGUI observer) {
+        this.observer = observer;
+    }
+
+    protected void notifyObserver() {
+        if (observer != null) {
+            observer.updateElevatorStatuses(getElevatorStatusMap());
+        }
+    }
+    public Map<Integer, ElevatorStatus> getElevatorStatusMap() {
+        return elevatorStatusMap;
+    }
+
+
+
+    public void completeCommand(FloorData command) {
+        commandStateMachines.remove(command);
+        // Perform any additional cleanup or notification needed
+    }
+
+    public void triggerCommandEvent(FloorData command, String event) {
+        SchedulerStateMachine stateMachine = commandStateMachines.get(command);
+        if (stateMachine != null) {
+            stateMachine.triggerEvent(event);
+        } else {
+        }
+    }
+
+
+    private void checkElevatorAndTransitionState(ElevatorStatus chosenElevator, FloorData floorData) {
         if (chosenElevator.getCurrentFloor() == floorData.getArrivalFloor()) {
             // The chosen elevator has reached the arrival floor.
             // Now, transition the associated state machine to WaitingForDestinationSensor.
@@ -325,93 +559,8 @@ public class SchedulerSubsystem implements Runnable {
     }
 
 
-    // Elevator Subsystem 1 Task
-    Runnable elevatorSubsystem1Task = () -> {
-        try {
-            byte[] receiveData = new byte[200];
-            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 
-            while (!Thread.currentThread().isInterrupted()) {
-                receivePacket.setLength(receiveData.length);
-                receiveElevatorStatusSocket1.receive(receivePacket);
-                String elevatorRequest = new String(receivePacket.getData(), receivePacket.getOffset(), receivePacket.getLength());
-                addElevatorStatus(elevatorRequest);
-                clock.getInstance().printCurrentTime();
-                TestInformationOfElevator = "Received from Elevator Subsystem 10: " + elevatorRequest;
-                System.out.println("Received from Elevator Subsystem 10: " + elevatorRequest);
-                printAllElevatorStatuses();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    };
-
-    // Elevator Subsystem 2 Task
-    Runnable elevatorSubsystem2Task = () -> {
-        try {
-            byte[] receiveData = new byte[200];
-            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-
-            while (!Thread.currentThread().isInterrupted()) {
-                receivePacket.setLength(receiveData.length);
-                receiveElevatorStatusSocket2.receive(receivePacket);
-                String elevatorRequest = new String(receivePacket.getData(), receivePacket.getOffset(), receivePacket.getLength());
-                addElevatorStatus(elevatorRequest);
-                clock.getInstance().printCurrentTime();
-                System.out.println("Received from Elevator Subsystem 12: " + elevatorRequest);
-                printAllElevatorStatuses();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    };
-
-    // Elevator Subsystem 3 Task
-    Runnable elevatorSubsystem3Task = () -> {
-        try {
-            byte[] receiveData = new byte[200];
-            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-
-            while (!Thread.currentThread().isInterrupted()) {
-                receivePacket.setLength(receiveData.length);
-                receiveElevatorStatusSocket3.receive(receivePacket);
-                String elevatorRequest = new String(receivePacket.getData(), receivePacket.getOffset(), receivePacket.getLength());
-                addElevatorStatus(elevatorRequest);
-                clock.getInstance().printCurrentTime();
-                System.out.println("Received from Elevator Subsystem 14: " + elevatorRequest);
-                printAllElevatorStatuses();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    };
-
-    // Elevator Subsystem 4 Task
-    Runnable elevatorSubsystem4Task = () -> {
-        try {
-            byte[] receiveData = new byte[200];
-            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-
-            while (!Thread.currentThread().isInterrupted()) {
-                receivePacket.setLength(receiveData.length);
-                receiveElevatorStatusSocket4.receive(receivePacket);
-                String elevatorRequest = new String(receivePacket.getData(), receivePacket.getOffset(), receivePacket.getLength());
-                addElevatorStatus(elevatorRequest);
-                clock.getInstance().printCurrentTime();
-                System.out.println("Received from Elevator Subsystem 16: " + elevatorRequest);
-                printAllElevatorStatuses();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    };
-
-
-
-
-    private void processRequests() throws Exception, InterruptedException {
-
-    }
+    private void processRequests() throws Exception, InterruptedException {}
 
 
     public void process(FloorData command) throws RemoteException {
@@ -488,144 +637,5 @@ public class SchedulerSubsystem implements Runnable {
     // Send the Command Request to the Elevator
     private void dispatchToElevator (FloorData command) throws InterruptedException {
         System.out.println("---------- SCHEDULER SUBSYSTEM: Dispatching Floor Request to Elevator: " + command + " ----------\n");
-    }
-
-    private int chooseElevator(FloorData command) throws RemoteException {
-        List<ElevatorStatus> applicableElevators = new ArrayList<>();
-        List<ElevatorStatus> allElevators = new ArrayList<>();
-
-        // Collect elevators that meet the criteria
-        for (ElevatorStatus status : elevatorStatusMap.values()) {
-            boolean isElevatorMovingCorrectly = ((status.getDirection() == command.getDirection() && status.getDirection() == Direction.DOWN)  || status.getDirection() == Direction.STATIONARY) && status.getCurrentFloor() >= command.getArrivalFloor();
-            boolean isElevatorMovingCorrectlyUp = ((status.getDirection() == command.getDirection() && status.getDirection() == Direction.UP) || status.getDirection() == Direction.STATIONARY) && status.getCurrentFloor() <= command.getArrivalFloor();
-
-            if (isElevatorMovingCorrectly || isElevatorMovingCorrectlyUp && status.getTargetFloors().size() < 5) {
-                applicableElevators.add(status);
-            }
-            else if(status.getTargetFloors().size() < 5){
-                allElevators.add(status);
-            }
-
-        }
-
-        // Sort the list of applicable elevators based on some criteria, for example, proximity to the command's arrival floor
-        applicableElevators.sort(new Comparator<ElevatorStatus>() {
-            @Override
-            public int compare(ElevatorStatus o1, ElevatorStatus o2) {
-                // This example sorts based on proximity to the arrival floor
-                // Adjust according to your specific criteria
-                return Integer.compare(Math.abs(o1.getCurrentFloor() - command.getArrivalFloor()),
-                        Math.abs(o2.getCurrentFloor() - command.getArrivalFloor()));
-            }
-        });
-
-        //matchingElevators.sort(Comparator.comparingInt(e -> Math.abs(e.getCurrentFloor() - command.getArrivalFloor())));
-
-        //sorts allElevators which is chosen if there are no elevators headed in the same direction
-        allElevators.sort(new Comparator<ElevatorStatus>() {
-            @Override
-            public int compare(ElevatorStatus o1, ElevatorStatus o2) {
-                // This example sorts based on proximity to the arrival floor
-                // Adjust according to your specific criteria
-                return Integer.compare(Math.abs(o1.getCurrentFloor() - command.getArrivalFloor()),
-                        Math.abs(o2.getCurrentFloor() - command.getArrivalFloor()));
-            }
-        });
-
-        if (!applicableElevators.isEmpty()) {
-            // Return the id of the first elevator in the sorted list
-            return applicableElevators.getFirst().getId();
-        }
-
-        // Handle the case where no elevators are applicable
-        // This might involve choosing any available elevator or throwing an exception
-        for(ElevatorStatus es : allElevators){
-            if (es.getDirection() == command.getDirection() || es.getDirection() == Direction.STATIONARY){
-                return es.getId();
-            }
-        }
-        return allElevators.getFirst().getId();
-        //throw new IllegalStateException("No applicable elevators found for the command.");
-    }
-
-
-    private synchronized void printAllElevatorStatuses() {
-        // Update headers to include "Door Faults"
-        String[] headers = {"Elevator", "Level", "Direction", "State", "Target Floors", "Door Faults"};
-        // Adjust the maximum width for each column to accommodate the new "Door Faults" column
-        int[] columnWidths = {10, 10, 10, 15, 20, 15}; // Adjust the last column width as needed for door faults
-        clock.printCurrentTime();
-
-        // Print header with separators
-        for (int i = 0; i < headers.length; i++) {
-            String headerFormat = "| %-" + columnWidths[i] + "s ";
-            System.out.printf(headerFormat, headers[i]);
-        }
-        System.out.println("|");
-        clock.printCurrentTime();
-
-        // Print a separator line
-        for (int width : columnWidths) {
-            System.out.print("+");
-            for (int j = 0; j < width + 1; j++) {
-                System.out.print("-");
-            }
-        }
-
-
-        System.out.println("+");
-        clock.printCurrentTime();
-
-        // Sort and print the rows of elevator status information including target floors and door faults
-        elevatorStatusMap.values().stream()
-                .sorted(Comparator.comparingInt(ElevatorStatus::getId))
-                .forEach(status -> {
-
-                    System.out.printf("| %-" + (columnWidths[0] - 1) + "d ", status.getId()); // Elevator ID
-                    System.out.printf("| %-" + (columnWidths[1] - 1) + "d ", status.getCurrentFloor()); // Elevator Level
-                    System.out.printf("| %-" + (columnWidths[2] - 1) + "s ", status.getDirection().toString()); // Elevator Direction
-                    System.out.printf("| %-" + (columnWidths[3] - 1) + "s ", status.getState()); // Elevator State
-
-                    // Target Floors formatting
-                    String targetFloorsStr = status.getTargetFloors().isEmpty() ? "None" :
-                            status.getTargetFloors().stream()
-                                    .map(pair -> "(" + pair.getKey() + "->" + pair.getValue() + ")")
-                                    .collect(Collectors.joining(","));
-
-
-                    System.out.printf("| %-" + (columnWidths[4] - 1) + "s ", targetFloorsStr);
-
-                    // Door Faults formatting
-                    String doorFaultsStr = status.getDoorFaults().isEmpty() ? "None" :
-                            status.getDoorFaults().stream()
-                                    .map(fault -> fault.getFaultType() + ":" + fault.getRetryAttempts())
-                                    .collect(Collectors.joining(", "));
-
-                    System.out.printf("| %-" + (columnWidths[5] - 1) + "s ", doorFaultsStr); // Door Faults
-
-                    System.out.println("|");
-                    clock.printCurrentTime();
-
-                });
-
-        // Print bottom table border
-        for (int width : columnWidths) {
-            System.out.print("+");
-            for (int j = 0; j < width + 1; j++) {
-                System.out.print("-");
-            }
-        }
-        System.out.println("+");
-    }
-
-    public static void main(String[] args) throws Exception{
-
-        SharedDataImpl sharedData = new SharedDataImpl();
-        LocateRegistry.createRegistry(1099);
-        Naming.rebind("SharedData", sharedData);
-
-        SchedulerSubsystem schedulerSubsystem = new SchedulerSubsystem((sharedData));
-        Thread thread = new Thread(schedulerSubsystem);
-        thread.start();
     }
 }
