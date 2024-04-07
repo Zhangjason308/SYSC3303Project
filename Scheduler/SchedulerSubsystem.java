@@ -195,7 +195,7 @@ public class SchedulerSubsystem implements Runnable {
                 clock.getInstance().printCurrentTime();
                 System.out.println("Received from Elevator Subsystem 10: " + elevatorRequest);
                 printAllElevatorStatuses();
-                if (isOnLastItem && elevatorStatusMap.isEmpty()) {
+                if (isOnLastItem && elevatorStatusMap.get(0) == null && elevatorStatusMap.get(1) == null && elevatorStatusMap.get(2) == null && elevatorStatusMap.get(3) == null) {
                     System.out.println("Total time is " + (clock.getCurrentTime() - startTime));
                     isOnLastItem = false;
                 }
@@ -218,7 +218,7 @@ public class SchedulerSubsystem implements Runnable {
                 clock.getInstance().printCurrentTime();
                 System.out.println("Received from Elevator Subsystem 12: " + elevatorRequest);
                 printAllElevatorStatuses();
-                if (isOnLastItem && elevatorStatusMap.isEmpty()) {
+                if (isOnLastItem && elevatorStatusMap.get(0) == null && elevatorStatusMap.get(1) == null && elevatorStatusMap.get(2) == null && elevatorStatusMap.get(3) == null) {
                     System.out.println("Total time is " + (clock.getCurrentTime() - startTime));
                     isOnLastItem = false;
                 }
@@ -241,7 +241,7 @@ public class SchedulerSubsystem implements Runnable {
                 clock.getInstance().printCurrentTime();
                 System.out.println("Received from Elevator Subsystem 14: " + elevatorRequest);
                 printAllElevatorStatuses();
-                if (isOnLastItem && elevatorStatusMap.isEmpty()) {
+                if (isOnLastItem && elevatorStatusMap.get(0) == null && elevatorStatusMap.get(1) == null && elevatorStatusMap.get(2) == null && elevatorStatusMap.get(3) == null) {
                     System.out.println("Total time is " + (clock.getCurrentTime() - startTime));
                     isOnLastItem = false;
                 }
@@ -264,7 +264,7 @@ public class SchedulerSubsystem implements Runnable {
                 clock.getInstance().printCurrentTime();
                 System.out.println("Received from Elevator Subsystem 16: " + elevatorRequest);
                 printAllElevatorStatuses();
-                if (isOnLastItem && elevatorStatusMap.isEmpty()) {
+                if (isOnLastItem && elevatorStatusMap.get(0) == null && elevatorStatusMap.get(1) == null && elevatorStatusMap.get(2) == null && elevatorStatusMap.get(3) == null) {
                     System.out.println("Total time is " + (clock.getCurrentTime() - startTime));
                     isOnLastItem = false;
                 }
