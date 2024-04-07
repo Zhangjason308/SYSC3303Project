@@ -99,6 +99,8 @@ public class SchedulerSubsystem implements Runnable {
 
         Thread receiveFloorThread = new Thread(receiveFromFloorAndReplyTask);
         receiveFloorThread.start();
+        Thread watchdogThread = new Thread(elevatorWatchdogTask);
+        watchdogThread.start();
         int timeoutCounter = 0; // Initialize a counter for timeouts
         while (true) {
             try {
@@ -117,6 +119,61 @@ public class SchedulerSubsystem implements Runnable {
             }
         }
     }
+    Runnable elevatorWatchdogTask = new Runnable() {
+        private final Map<Integer, Integer> lastCheckedLevels = new ConcurrentHashMap<>();
+        private final Map<Integer, Long> watchStartTimes = new ConcurrentHashMap<>();
+        private final long checkIntervalMillis = 35000; // Check interval for movement
+
+        @Override
+        public void run() {
+            while (!Thread.currentThread().isInterrupted()) {
+                long currentTime = System.currentTimeMillis();
+                elevatorStatusMap.forEach((id, status) -> {
+                    if ("Moving".equals(status.getState())) {
+                        if (!watchStartTimes.containsKey(id)) {
+                            // Start watching this elevator and log it
+                            watchStartTimes.put(id, currentTime);
+                            clock.getInstance().printCurrentTime();
+                            System.out.println("Watching Elevator ID: " + id + " for movement.");
+
+                            lastCheckedLevels.put(id, status.getCurrentFloor()); // Update last known level
+                        } else {
+                            Integer lastLevel = lastCheckedLevels.get(id);
+                            Long watchStartTime = watchStartTimes.get(id);
+                            if (lastLevel != null && lastLevel.equals(status.getCurrentFloor()) &&
+                                    (currentTime - watchStartTime) > checkIntervalMillis) {
+                                // Elevator level has not changed in the interval while it was supposed to be moving
+                                handleStalledElevator(id, status.getCurrentFloor());
+                            }
+                            lastCheckedLevels.put(id, status.getCurrentFloor());
+                        }
+                    } else {
+                        // If not moving, remove from watch list and last checked levels
+                        watchStartTimes.remove(id);
+                        lastCheckedLevels.remove(id);
+                    }
+                });
+
+                try {
+                    Thread.sleep(1000); // Check every second
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+
+        private void handleStalledElevator(int elevatorId, int currentFloor) {
+            // Log, alert, or recover from the stalled elevator situation
+            clock.getInstance().printCurrentTime();
+            System.out.println("WatchDogTimer: Elevator " + elevatorId + " appears to be stalled at floor " + currentFloor);
+            elevatorStatusMap.get(elevatorId).setState("Disabled");
+            System.out.println("WatchDogTimer: Elevator " + elevatorId + " has been disabled");
+
+            // Reset the watch for this elevator
+            watchStartTimes.remove(elevatorId);
+        }
+    };
+
 
     // Elevator Subsystem 1 Task
     Runnable elevatorSubsystem1Task = () -> {

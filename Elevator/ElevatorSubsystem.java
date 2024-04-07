@@ -28,7 +28,8 @@ public class ElevatorSubsystem implements Runnable {
 
     int height = 0;
     private int currentFloor = 1; // Starting floor
-    private int totalFloorMoves = 0;
+    private boolean infiniteVoid = false;
+
     public int getCurrentFloor() {return currentFloor;}
 
     public void setCurrentFloor(int currentFloor) {this.currentFloor = currentFloor;}
@@ -215,50 +216,46 @@ public class ElevatorSubsystem implements Runnable {
             case "STUCK_CLOSED":
                 elevatorStateMachine.setState("DoorsClosed");
                 break;
-            // Handle other fault types as necessary
+            case "HARD_FAULT":
+                this.infiniteVoid = true;
+                System.out.println("ELEVATOR [" + id + "]: HARD FAULT INJECTED");
+
+                break;
             default:
                 System.out.println("ELEVATOR [" + id + "]: Unknown or unhandled fault type for state transition: " + faultType);
                 break;
         }
     }
     public void handleDoorFaults() throws UnknownHostException {
-
         Iterator<DoorFault> iterator = doorFaults.iterator();
         while (iterator.hasNext()) {
             rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
 
             DoorFault fault = iterator.next();
-            boolean resolved = false;
-
             switch (fault.getFaultType()) {
                 case "STUCK_OPEN":
-                    resolved = attemptToCloseDoors();
-                    if (resolved) {
-                        System.out.println("ELEVATOR [" + id + "]:Attempt to close doors...SUCCESS");
+                    if (attemptToCloseDoors()) {
+                        System.out.println("ELEVATOR [" + id + "]: Attempt to close doors...SUCCESS");
                         elevatorStateMachine.setState("DoorsClosed");
+                    } else {
+                        System.out.println("ELEVATOR [" + id + "]: Attempt to close doors...FAILED");
                     }
                     break;
                 case "STUCK_CLOSED":
-                    resolved = attemptToOpenDoors();
-                    if (resolved) {
-                        System.out.println("ELEVATOR [" + id + "]:Attempt to open doors...SUCCESS");
+                    if (attemptToOpenDoors()) {
+                        System.out.println("ELEVATOR [" + id + "]: Attempt to open doors...SUCCESS");
                         elevatorStateMachine.setState("DoorsOpen");
+                    } else {
+                        System.out.println("ELEVATOR [" + id + "]: Attempt to open doors...FAILED");
                     }
                     break;
-                // Add other fault types and their resolutions here
+                // No need to handle other fault types specifically
             }
-
-            fault.decrementRetryAttempts();
-
-            if (resolved) {
-                iterator.remove(); // Remove the fault if resolved
-            } else if (fault.getRetryAttempts() <= 0) {
-                // If no retry attempts left and not resolved, handle as a HardFault
-                handleHardFault(fault.getFaultType());
-                iterator.remove(); // Optionally remove the fault after handling as a HardFault
-            }
+            // Remove the fault after handling, regardless of the outcome
+            iterator.remove();
         }
     }
+
 
     private void handleHardFault(String hardFault) {
         // Logic to handle a HardFault
@@ -272,24 +269,24 @@ public class ElevatorSubsystem implements Runnable {
         // Simulate door closing logic
         try {
             System.out.println("ELEVATOR [" + id + "]:Attempting to close doors...");
-            sleep(ElevatorTiming.DOORS_CLOSING); // Simulate the time to close doors
+            sleep(20000); // Simulate the time to close doors
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt(); // Restore interrupted status
         }
         // Assume a fixed chance of success/failure for simplicity; adjust as needed
-        return Math.random() > 0.5;
+        return true;
     }
 
     private boolean attemptToOpenDoors() {
         // Simulate door opening logic
         try {
             System.out.println("ELEVATOR [" + id + "]:Attempting to open doors...");
-            sleep(ElevatorTiming.DOORS_OPENING); // Simulate the time to open doors
+            sleep(20000); // Simulate the time to open doors
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt(); // Restore interrupted status
         }
         // Assume a fixed chance of success/failure for simplicity; adjust as needed
-        return Math.random() > 0.5;
+        return true;
     }
 
 
@@ -320,7 +317,13 @@ public class ElevatorSubsystem implements Runnable {
                 try {
                     // Assuming rpcReceive is now designed to return a String representing the command
                     String rawData = rpcReceive(receiveSocket, new DatagramPacket(new byte[1024], 1024), 1024);
-                    if (rawData != null && !rawData.isEmpty()) {
+                    if (rawData.contains("FAULT")) {
+                        // Handle the fault
+                        injectDoorFault(rawData);
+                        TestString = "---------- ELEVATOR [" + id + "]: Received  Fault: " + rawData + " ----------\n";
+                        System.out.println("---------- ELEVATOR [" + id + "]: Received  Fault: " + rawData + " ----------\n");
+                        rpcSend("FAULT RECEIVED", sendSocket, InetAddress.getLocalHost(), id + 10);
+                    } else {
                         FloorData command = convertStringToFloorData(rawData);
                         if (command != null) {
                             // Map the arrival floor to the destination floor
@@ -753,10 +756,11 @@ public class ElevatorSubsystem implements Runnable {
             handleHardFault(hardFaults.get(0).toString());
             return;
         }
-
-        currentFloor++; // Successfully moved up by one floor
-        totalFloorMoves ++;
-        System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
+        if (!infiniteVoid) {
+            sleep(999999999);
+            currentFloor++; // Successfully moved up by one floor
+            System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
+        }
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
     }
 
@@ -777,9 +781,11 @@ public class ElevatorSubsystem implements Runnable {
             return;
         }
 
-        currentFloor--; // Successfully moved up by one floor
-        totalFloorMoves ++;
-        System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
+        if (!infiniteVoid) {
+            sleep(999999999);
+            currentFloor--; // Successfully moved up by one floor
+            System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
+        }
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
     }
 
@@ -793,10 +799,6 @@ public class ElevatorSubsystem implements Runnable {
 
     public void simulateHandleDoorFaults() {
         this.doorFaults.clear(); // Simplistically assuming all faults are "resolved" immediately for testing
-    }
-
-    public int getTotalFloorMoves(){
-        return totalFloorMoves;
     }
 
     public static void main(String args[]) {
