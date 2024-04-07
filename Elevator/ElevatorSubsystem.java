@@ -28,6 +28,7 @@ public class ElevatorSubsystem implements Runnable {
 
     int height = 0;
     private int currentFloor = 1; // Starting floor
+    private int totalFloorMoves = 0;
     public int getCurrentFloor() {return currentFloor;}
 
     public void setCurrentFloor(int currentFloor) {this.currentFloor = currentFloor;}
@@ -754,6 +755,7 @@ public class ElevatorSubsystem implements Runnable {
         }
 
         currentFloor++; // Successfully moved up by one floor
+        totalFloorMoves ++;
         System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
     }
@@ -776,6 +778,7 @@ public class ElevatorSubsystem implements Runnable {
         }
 
         currentFloor--; // Successfully moved up by one floor
+        totalFloorMoves ++;
         System.out.println("ELEVATOR [" + id + "]: Reached floor " + currentFloor);
         rpcSend(getElevatorStatus(), sendSocket, InetAddress.getLocalHost(), id+10);
     }
@@ -790,6 +793,10 @@ public class ElevatorSubsystem implements Runnable {
 
     public void simulateHandleDoorFaults() {
         this.doorFaults.clear(); // Simplistically assuming all faults are "resolved" immediately for testing
+    }
+
+    public int getTotalFloorMoves(){
+        return totalFloorMoves;
     }
 
     public static void main(String args[]) {

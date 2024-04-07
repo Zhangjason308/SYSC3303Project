@@ -499,10 +499,13 @@ public class SchedulerSubsystem implements Runnable {
             boolean isElevatorMovingCorrectly = ((status.getDirection() == command.getDirection() && status.getDirection() == Direction.DOWN)  || status.getDirection() == Direction.STATIONARY) && status.getCurrentFloor() >= command.getArrivalFloor();
             boolean isElevatorMovingCorrectlyUp = ((status.getDirection() == command.getDirection() && status.getDirection() == Direction.UP) || status.getDirection() == Direction.STATIONARY) && status.getCurrentFloor() <= command.getArrivalFloor();
 
-            if (isElevatorMovingCorrectly || isElevatorMovingCorrectlyUp) {
+            if (isElevatorMovingCorrectly || isElevatorMovingCorrectlyUp && status.getTargetFloors().size() < 5) {
                 applicableElevators.add(status);
             }
-            allElevators.add(status);
+            else if(status.getTargetFloors().size() < 5){
+                allElevators.add(status);
+            }
+
         }
 
         // Sort the list of applicable elevators based on some criteria, for example, proximity to the command's arrival floor
