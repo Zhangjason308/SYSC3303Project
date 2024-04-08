@@ -25,7 +25,7 @@ import static java.lang.Thread.sleep;
  */
 
 public class ElevatorSubsystem implements Runnable {
-
+    private int totalFloorMoves = 0;
     int height = 0;
     private int currentFloor = 1; // Starting floor
     private boolean isHardFault = false;

@@ -3,7 +3,7 @@ SYSC3303Project - Elevator Control System
 ===============================================================================
 
 DESCRIPTION:
-Iteration_3 of SYSC3303 for Group 8.
+Iteration_5 of SYSC3303 for Group 8.
 Based off Assignment_1, Assignment_2, and Assignment_3 current iteration models the operation of an elevator, handling floor requests, moving between floors, and scheduling these tasks using the 3 Subsystems outlined in the Project Specification orchestrated by the Java Monitor Synchornizer.java class.
 It also includes 4 elevators, that are scheduled such that the most optimal elevator takes the next request.
 

@@ -456,10 +456,12 @@ public class SchedulerSubsystem implements Runnable {
             boolean isElevatorMovingCorrectly = ((status.getDirection() == command.getDirection() && status.getDirection() == Direction.DOWN)  || status.getDirection() == Direction.STATIONARY) && status.getCurrentFloor() >= command.getArrivalFloor();
             boolean isElevatorMovingCorrectlyUp = ((status.getDirection() == command.getDirection() && status.getDirection() == Direction.UP) || status.getDirection() == Direction.STATIONARY) && status.getCurrentFloor() <= command.getArrivalFloor();
 
-            if (isElevatorMovingCorrectly || isElevatorMovingCorrectlyUp) {
+            if (isElevatorMovingCorrectly || isElevatorMovingCorrectlyUp && status.getTargetFloors().size() < 5) {
                 applicableElevators.add(status);
             }
-            allElevators.add(status);
+            else if(status.getTargetFloors().size() < 5){
+                allElevators.add(status);
+            }
         }
 
         // Sort the list of applicable elevators based on some criteria, for example, proximity to the command's arrival floor
@@ -624,7 +626,18 @@ public class SchedulerSubsystem implements Runnable {
 
 
 
-    private void processRequests() throws Exception, InterruptedException {}
+    private void processRequests() throws Exception, InterruptedException {
+        if (isfinished) {
+            long totalTime = (clock.getCurrentTime() - startTime) / 1000; // Convert milliseconds to seconds
+            long minutes = totalTime / 60;
+            long seconds = totalTime % 60;
+
+            System.out.println("Total time is " + minutes + " minutes and " + seconds + " seconds.");
+            isfinished = false;
+            Thread.currentThread().interrupt();
+            System.exit(1);
+        }
+    }
 
 
     public void process(FloorData command) throws RemoteException {
