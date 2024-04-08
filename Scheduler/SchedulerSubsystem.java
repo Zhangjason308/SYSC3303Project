@@ -44,6 +44,8 @@ public class SchedulerSubsystem implements Runnable {
     SimulatedClockSingleton clock;
     SchedulerStateMachine schedulerStateMachine;
 
+    boolean isfinished = false;
+
     public static void main(String[] args) throws Exception{
         SharedDataImpl sharedData = new SharedDataImpl();
         LocateRegistry.createRegistry(1099);
