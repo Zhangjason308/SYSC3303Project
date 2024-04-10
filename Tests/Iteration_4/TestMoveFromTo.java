@@ -1,4 +1,4 @@
-package SYSC3303Project.Test;
+package SYSC3303Project.Tests.Iteration_4;
 
 import SYSC3303Project.Elevator.ElevatorSubsystem;
 import SYSC3303Project.Floor.FloorData;
